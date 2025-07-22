@@ -5,7 +5,7 @@ import { getAuthUser } from '@/lib/auth';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser(request);
@@ -20,7 +20,8 @@ export async function PUT(
 
     await initMongoose();
 
-    const entry = await IncomeEntry.findById(params.id);
+    const { id } = await params;
+    const entry = await IncomeEntry.findById(id);
     if (!entry) {
       return NextResponse.json(
         { error: 'Entry not found' },
@@ -28,36 +29,38 @@ export async function PUT(
       );
     }
 
-    // Check if user can edit this entry
-    if (entry.user.toString() !== user.id) {
+    // Check authorization
+    const entryUserId = typeof entry.user === 'string' ? entry.user : entry.user?.toString();
+    if (entryUserId !== user.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Validate that the entry date is within the last month
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-    if (entry.date < oneMonthAgo) {
+    // Validate date (only allow editing last month's data)
+    const entryDate = new Date(entry.date);
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    
+    if (entryDate < lastMonth) {
       return NextResponse.json(
-        { error: 'You can only edit entries from the last month' },
+        { error: 'Cannot edit entries older than last month' },
         { status: 400 }
       );
     }
 
-    entry.cashIncome = cashIncome !== undefined ? cashIncome : entry.cashIncome;
-    entry.posIncome = posIncome !== undefined ? posIncome : entry.posIncome;
-    entry.expenses = expenses !== undefined ? expenses : entry.expenses;
+    // Update entry
+    entry.cashIncome = Number(cashIncome) || 0;
+    entry.posIncome = Number(posIncome) || 0;
+    entry.expenses = Number(expenses) || 0;
 
     await entry.save();
 
     return NextResponse.json({ entry });
-  } catch (error) {
-    console.error('Update income entry error:', error);
+  } catch {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to update entry' },
       { status: 500 }
     );
   }
@@ -65,7 +68,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser(request);
@@ -78,7 +81,8 @@ export async function DELETE(
 
     await initMongoose();
 
-    const entry = await IncomeEntry.findById(params.id);
+    const { id } = await params;
+    const entry = await IncomeEntry.findById(id);
     if (!entry) {
       return NextResponse.json(
         { error: 'Entry not found' },
@@ -86,32 +90,33 @@ export async function DELETE(
       );
     }
 
-    // Check if user can delete this entry
-    if (entry.user.toString() !== user.id) {
+    // Check authorization
+    const entryUserId = typeof entry.user === 'string' ? entry.user : entry.user?.toString();
+    if (entryUserId !== user.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Validate that the entry date is within the last month
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-    if (entry.date < oneMonthAgo) {
+    // Validate date (only allow deleting last month's data)
+    const entryDate = new Date(entry.date);
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    
+    if (entryDate < lastMonth) {
       return NextResponse.json(
-        { error: 'You can only delete entries from the last month' },
+        { error: 'Cannot delete entries older than last month' },
         { status: 400 }
       );
     }
 
-    await IncomeEntry.findByIdAndDelete(params.id);
+    await IncomeEntry.findByIdAndDelete(id);
 
     return NextResponse.json({ message: 'Entry deleted successfully' });
-  } catch (error) {
-    console.error('Delete income entry error:', error);
+  } catch {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to delete entry' },
       { status: 500 }
     );
   }

@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser(request);
@@ -28,7 +28,8 @@ export async function PUT(
 
     await initMongoose();
 
-    const employee = await Employee.findById(params.id);
+    const { id } = await params;
+    const employee = await Employee.findById(id);
     if (!employee) {
       return NextResponse.json(
         { error: 'Employee not found' },
@@ -48,35 +49,34 @@ export async function PUT(
     const existingBusiness = await Business.findOne({ username });
     const existingEmployee = await Employee.findOne({ 
       username, 
-      _id: { $ne: params.id } 
+      _id: { $ne: id } 
     });
     
     if (existingBusiness || existingEmployee) {
       return NextResponse.json(
         { error: 'Username already exists' },
-        { status: 409 }
+        { status: 400 }
       );
     }
 
-    // Update employee fields
+    // Update employee data
     employee.name = name;
     employee.username = username;
     
-    // Only update password if provided
-    if (password && password.trim() !== '') {
-      if (password.length < 6) {
-        return NextResponse.json(
-          { error: 'Password must be at least 6 characters long' },
-          { status: 400 }
-        );
-      }
+    if (password && password.trim()) {
       employee.password = password;
     }
-
+    
     await employee.save();
 
-    const employeeResponse = employee.toObject();
-    delete employeeResponse.password;
+    const employeeResponse = {
+      _id: employee._id,
+      name: employee.name,
+      username: employee.username,
+      business: employee.business,
+      createdAt: employee.createdAt,
+      updatedAt: employee.updatedAt
+    };
 
     return NextResponse.json({ employee: employeeResponse });
   } catch (error: unknown) {
@@ -85,12 +85,12 @@ export async function PUT(
     if (error && typeof error === 'object' && 'code' in error && (error as any).code === 11000) {
       return NextResponse.json(
         { error: 'Username already exists' },
-        { status: 409 }
+        { status: 400 }
       );
     }
-
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to update employee' },
       { status: 500 }
     );
   }
@@ -98,7 +98,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser(request);
@@ -111,7 +111,8 @@ export async function DELETE(
 
     await initMongoose();
 
-    const employee = await Employee.findById(params.id);
+    const { id } = await params;
+    const employee = await Employee.findById(id);
     if (!employee) {
       return NextResponse.json(
         { error: 'Employee not found' },
@@ -130,17 +131,16 @@ export async function DELETE(
     // Remove employee from business employees array
     await Business.findByIdAndUpdate(
       user.businessId,
-      { $pull: { employees: params.id } }
+      { $pull: { employees: id } }
     );
 
     // Delete the employee
-    await Employee.findByIdAndDelete(params.id);
+    await Employee.findByIdAndDelete(id);
 
     return NextResponse.json({ message: 'Employee deleted successfully' });
-  } catch (error) {
-    console.error('Delete employee error:', error);
+  } catch {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to delete employee' },
       { status: 500 }
     );
   }
