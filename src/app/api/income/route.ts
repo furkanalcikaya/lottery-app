@@ -87,7 +87,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate that the date is within the last month
-    const entryDate = new Date(date);
+    // Parse date in local timezone to avoid timezone shift
+    const [year, month, day] = date.split('-').map(Number);
+    const entryDate = new Date(year, month - 1, day); // month is 0-based
+    
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
@@ -101,11 +104,14 @@ export async function POST(request: NextRequest) {
     await initMongoose();
 
     // Check if entry already exists for this user and date
+    const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
+    
     const existingEntry = await IncomeEntry.findOne({
       user: user.id,
       date: {
-        $gte: new Date(entryDate.setHours(0, 0, 0, 0)),
-        $lt: new Date(entryDate.setHours(23, 59, 59, 999))
+        $gte: startOfDay,
+        $lt: endOfDay
       }
     });
 

@@ -19,12 +19,20 @@ interface IncomeEntry {
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
+  
+  const formatDateForInput = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [entries, setEntries] = useState<IncomeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<IncomeEntry | null>(null);
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: formatDateForInput(new Date()),
     cashIncome: '',
     posIncome: '',
     expenses: ''
@@ -91,7 +99,7 @@ export default function EmployeeDashboard() {
         setShowForm(false);
         setEditingEntry(null);
         setFormData({
-          date: new Date().toISOString().split('T')[0],
+          date: formatDateForInput(new Date()),
           cashIncome: '',
           posIncome: '',
           expenses: ''
@@ -166,7 +174,7 @@ export default function EmployeeDashboard() {
             setShowForm(true);
             setEditingEntry(null);
             setFormData({
-              date: new Date().toISOString().split('T')[0],
+              date: formatDateForInput(new Date()),
               cashIncome: '',
               posIncome: '',
               expenses: ''
