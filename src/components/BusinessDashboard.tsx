@@ -190,18 +190,18 @@ export default function BusinessDashboard() {
 
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'TRY'
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const formatDateForDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   const getMonthlyStats = (): MonthlyStats[] => {
@@ -328,7 +328,7 @@ export default function BusinessDashboard() {
               key={tab.key}
               onClick={() => {
                 setActiveTab(tab.key as any);
-                // Refresh data when switching to overview or reports
+                // Refresh data when switching to overview or reports, for the date filter
                 if (tab.key === 'overview' || tab.key === 'reports') {
                   setRefreshKey(prev => prev + 1);
                 }
@@ -531,7 +531,7 @@ export default function BusinessDashboard() {
                           {employee.username}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {formatDate(employee.createdAt)}
+                          {formatDateForDisplay(employee.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex space-x-2">
@@ -578,7 +578,7 @@ export default function BusinessDashboard() {
               {monthlyStats.map((monthStat, index) => (
                 <div key={index} className="bg-gray-800 rounded-lg border border-gray-700">
                   <div className="p-6 border-b border-gray-700">
-                    <h3 className="text-lg font-semibold text-white">{monthStat.month}</h3>
+                    <h3 className="text-lg font-semibold text-white">{formatDateForDisplay(dateRange.startDate)} - {formatDateForDisplay(dateRange.endDate)}</h3>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                       <div>
                         <p className="text-sm text-gray-400">Cash Income</p>

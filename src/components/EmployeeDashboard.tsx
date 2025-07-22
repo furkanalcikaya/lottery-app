@@ -143,18 +143,18 @@ export default function EmployeeDashboard() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'TRY'
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const formatDateForDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   if (loading) {
@@ -214,9 +214,9 @@ export default function EmployeeDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Cash Income ($)
-                </label>
+                                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Cash Income (₺)
+                  </label>
                 <input
                   type="number"
                   step="0.01"
@@ -229,7 +229,7 @@ export default function EmployeeDashboard() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  POS Income ($)
+                                      POS Income (₺)
                 </label>
                 <input
                   type="number"
@@ -242,9 +242,9 @@ export default function EmployeeDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Expenses ($)
-                </label>
+                                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Expenses (₺)
+                  </label>
                 <input
                   type="number"
                   step="0.01"
@@ -318,7 +318,7 @@ export default function EmployeeDashboard() {
                   return (
                     <tr key={entry._id} className="text-gray-300">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {formatDate(entry.date)}
+                        {formatDateForDisplay(entry.date)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-green-400">
                         {formatCurrency(entry.cashIncome)}
