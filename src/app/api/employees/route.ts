@@ -92,10 +92,10 @@ export async function POST(request: NextRequest) {
       { employee: employeeResponse },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create employee error:', error);
     
-    if (error.code === 11000) {
+    if (error && typeof error === 'object' && 'code' in error && (error as any).code === 11000) {
       return NextResponse.json(
         { error: 'Username already exists' },
         { status: 409 }

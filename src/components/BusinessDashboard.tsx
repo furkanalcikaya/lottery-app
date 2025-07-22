@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import EmployeeDashboard from './EmployeeDashboard';
 
 interface Employee {
@@ -101,15 +101,15 @@ export default function BusinessDashboard() {
     }
   };
 
-  const fetchEntries = async () => {
+  const fetchEntries = useCallback(async () => {
     try {
       const url = `/api/income?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched entries:', data.entries);
-        console.log('Business entries:', data.entries.filter((e: any) => e.userType === 'Business'));
-        console.log('Employee entries:', data.entries.filter((e: any) => e.userType === 'Employee'));
+        console.log('Business entries:', data.entries.filter((e: { userType: string }) => e.userType === 'Business'));
+        console.log('Employee entries:', data.entries.filter((e: { userType: string }) => e.userType === 'Employee'));
         setEntries(data.entries);
       }
     } catch (error) {
@@ -117,7 +117,7 @@ export default function BusinessDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange.startDate, dateRange.endDate]);
 
   const handleEmployeeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,7 +182,7 @@ export default function BusinessDashboard() {
         const errorData = await response.json();
         setError(errorData.error);
       }
-    } catch (error) {
+    } catch {
       setError('Failed to delete employee');
     }
   };
@@ -297,7 +297,7 @@ export default function BusinessDashboard() {
     };
   };
 
-  const stats = getTotalStats();
+  // const stats = getTotalStats();
   const currentMonthStats = getCurrentMonthStats();
   const monthlyStats = getMonthlyStats();
 

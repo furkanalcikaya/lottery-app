@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface IncomeEntry {
@@ -35,7 +35,7 @@ export default function EmployeeDashboard() {
     fetchEntries();
   }, []);
 
-  const fetchEntries = async () => {
+  const fetchEntries = useCallback(async () => {
     try {
       const response = await fetch('/api/income');
       if (response.ok) {
@@ -56,7 +56,7 @@ export default function EmployeeDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +100,7 @@ export default function EmployeeDashboard() {
         const errorData = await response.json();
         setError(errorData.error);
       }
-    } catch (error) {
+    } catch {
       setError('Failed to save entry');
     }
   };
@@ -129,7 +129,7 @@ export default function EmployeeDashboard() {
         const errorData = await response.json();
         setError(errorData.error);
       }
-    } catch (error) {
+    } catch {
       setError('Failed to delete entry');
     }
   };
@@ -174,7 +174,7 @@ export default function EmployeeDashboard() {
           }}
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
-          Add Today's End of Day
+          Add Today&apos;s End of Day
         </button>
       </div>
 
