@@ -776,37 +776,7 @@ export default function BusinessDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
-                    {/* Business Owner Row */}
-                    <tr className="text-gray-300 bg-gray-750">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span>{user?.name || user?.companyName || user?.username}</span>
-                          <span className="ml-2 px-2 py-1 text-xs bg-blue-600 text-white rounded">
-                            {t('employees.business_owner')}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {user?.username}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        -
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => {
-                            setShowBusinessPasswordForm(true);
-                            setBusinessPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                            setShowBusinessCurrentPassword(false);
-                            setShowBusinessNewPassword(false);
-                            setShowBusinessConfirmPassword(false);
-                          }}
-                          className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          {t('employees.change_password')}
-                        </button>
-                      </td>
-                    </tr>
+                    
                     
                     {/* Employee Rows */}
                     {employees.map((employee) => (
@@ -838,6 +808,37 @@ export default function BusinessDashboard() {
                         </td>
                       </tr>
                     ))}
+                    {/* Business Owner Row */}
+                    <tr className="text-gray-300 bg-gray-750">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <span>{user?.name}</span>
+                          <span className="ml-2 px-2 py-1 text-xs bg-blue-600 text-white rounded">
+                            {t('employees.business_owner')}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {user?.username}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        -
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            setShowBusinessPasswordForm(true);
+                            setBusinessPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                            setShowBusinessCurrentPassword(false);
+                            setShowBusinessNewPassword(false);
+                            setShowBusinessConfirmPassword(false);
+                          }}
+                          className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                        >
+                          {t('employees.change_password')}
+                        </button>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
