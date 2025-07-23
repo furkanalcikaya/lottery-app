@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
       username: business.username,
       role: 'business' as const,
       businessId: business._id.toString(),
-      name: business.companyName
+      name: business.companyName,
+      companyName: business.companyName
     };
 
     const authResponse = createAuthResponse(authUser);

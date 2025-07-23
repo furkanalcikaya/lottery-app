@@ -12,6 +12,7 @@ export interface AuthUser {
   role: 'business' | 'employee';
   businessId: string;
   name?: string;
+  companyName?: string;
 }
 
 export function signToken(payload: AuthUser): string {

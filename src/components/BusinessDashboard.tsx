@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import EmployeeDashboard from './EmployeeDashboard';
 
 interface Employee {
@@ -40,6 +41,7 @@ interface MonthlyStats {
 }
 
 export default function BusinessDashboard() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'income' | 'reports'>('overview');
   const [refreshKey, setRefreshKey] = useState(0);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -312,17 +314,17 @@ export default function BusinessDashboard() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-white">Business Dashboard</h1>
+        <h1 className="text-3xl font-bold text-white">{t('dashboard.business_title')}</h1>
       </div>
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-700">
         <nav className="flex space-x-8 overflow-x-auto">
           {[
-            { key: 'overview', label: 'Overview' },
-            { key: 'employees', label: 'Employees' },
-            { key: 'income', label: 'My Income' },
-            { key: 'reports', label: 'Reports' }
+            { key: 'overview', label: t('dashboard.tabs.overview') },
+            { key: 'employees', label: t('dashboard.tabs.employees') },
+            { key: 'income', label: t('dashboard.tabs.my_income') },
+            { key: 'reports', label: t('dashboard.tabs.reports') }
           ].map(tab => (
             <button
               key={tab.key}
@@ -356,23 +358,23 @@ export default function BusinessDashboard() {
         <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">Total Employees</h3>
+              <h3 className="text-sm font-medium text-gray-400">{t('overview.total_employees')}</h3>
               <p className="text-3xl font-bold text-white mt-2">{employees.length}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">Selected Range Cash Income</h3>
+              <h3 className="text-sm font-medium text-gray-400">{t('overview.cash_income')}</h3>
               <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(currentMonthStats.cash)}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">Selected Range POS Income</h3>
+              <h3 className="text-sm font-medium text-gray-400">{t('overview.pos_income')}</h3>
               <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(currentMonthStats.pos)}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">Selected Range Expenses</h3>
+              <h3 className="text-sm font-medium text-gray-400">{t('overview.expenses')}</h3>
               <p className="text-3xl font-bold text-red-400 mt-2">{formatCurrency(currentMonthStats.expenses)}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">Selected Range Net Profit</h3>
+              <h3 className="text-sm font-medium text-gray-400">{t('overview.net_profit')}</h3>
               <p className={`text-3xl font-bold mt-2 ${currentMonthStats.net >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {formatCurrency(currentMonthStats.net)}
               </p>
@@ -380,10 +382,10 @@ export default function BusinessDashboard() {
           </div>
 
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h3 className="text-lg font-semibold text-white mb-4">Date Range Filter</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">{t('reports.date_filter')}</h3>
             <div className="flex flex-col sm:flex-row gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('reports.start_date')}</label>
                 <input
                   type="date"
                   value={dateRange.startDate}
@@ -392,7 +394,7 @@ export default function BusinessDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('reports.end_date')}</label>
                 <input
                   type="date"
                   value={dateRange.endDate}
@@ -405,7 +407,7 @@ export default function BusinessDashboard() {
                   onClick={fetchEntries}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                 >
-                  Apply Filter
+                  {t('reports.apply_filter')}
                 </button>
               </div>
             </div>
@@ -417,7 +419,7 @@ export default function BusinessDashboard() {
       {activeTab === 'employees' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-white">Employee Management</h2>
+            <h2 className="text-xl font-semibold text-white">{t('employees.title')}</h2>
             <button
               onClick={() => {
                 setShowEmployeeForm(true);
@@ -426,19 +428,19 @@ export default function BusinessDashboard() {
               }}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
-              Add Employee
+                              {t('employees.add_button')}
             </button>
           </div>
 
           {showEmployeeForm && (
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-lg font-semibold text-white mb-4">
-                {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
+                {editingEmployee ? t('employees.edit_employee') : t('employees.add_employee')}
               </h3>
               
               <form onSubmit={handleEmployeeSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">{t('employees.name')}</label>
                   <input
                     type="text"
                     value={employeeFormData.name}
@@ -448,7 +450,7 @@ export default function BusinessDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">{t('employees.username')}</label>
                   <input
                     type="text"
                     value={employeeFormData.username}
@@ -459,7 +461,7 @@ export default function BusinessDashboard() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Password {editingEmployee && '(leave empty to keep current password)'}
+                    {t('employees.password')} 
                   </label>
                   <input
                     type="password"
@@ -467,7 +469,7 @@ export default function BusinessDashboard() {
                     onChange={(e) => setEmployeeFormData(prev => ({ ...prev, password: e.target.value }))}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required={!editingEmployee}
-                    placeholder={editingEmployee ? "Leave empty to keep current password" : "Enter password"}
+                    placeholder={editingEmployee ? t('employees.empty_password') : t('employees.enter_password')}
                   />
                 </div>
                 <div className="flex gap-3">
@@ -475,7 +477,7 @@ export default function BusinessDashboard() {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {editingEmployee ? 'Update Employee' : 'Add Employee'}
+                    {editingEmployee ? t('employees.update') : t('employees.add_title')}
                   </button>
                   <button
                     type="button"
@@ -486,7 +488,7 @@ export default function BusinessDashboard() {
                     }}
                     className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    Cancel
+                    {t('employees.cancel')}
                   </button>
                 </div>
               </form>
@@ -495,12 +497,12 @@ export default function BusinessDashboard() {
 
           <div className="bg-gray-800 rounded-lg border border-gray-700">
             <div className="p-6 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white">Employees</h3>
+              <h3 className="text-lg font-semibold text-white">{t('employees.employees')}</h3>
             </div>
             
             {employees.length === 0 ? (
               <div className="p-6 text-center text-gray-400">
-                No employees found. Add your first employee to get started!
+                {t('employees.no_employee')}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -508,16 +510,16 @@ export default function BusinessDashboard() {
                   <thead className="bg-gray-700">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Name
+                        {t('employees.name')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Username
+                        {t('employees.username')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Created
+                        {t('employees.created_date')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Actions
+                        {t('employees.actions')}
                       </th>
                     </tr>
                   </thead>
@@ -539,13 +541,13 @@ export default function BusinessDashboard() {
                               onClick={() => handleEditEmployee(employee)}
                               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
                             >
-                              Edit
+                              {t('employees.edit')}
                             </button>
                             <button
                               onClick={() => handleDeleteEmployee(employee._id)}
                               className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
                             >
-                              Delete
+                              {t('employees.delete')}
                             </button>
                           </div>
                         </td>
@@ -567,11 +569,11 @@ export default function BusinessDashboard() {
       {/* Reports Tab */}
       {activeTab === 'reports' && (
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-white">Monthly Reports</h2>
+          <h2 className="text-xl font-semibold text-white">{t('reports.description')}</h2>
 
           {monthlyStats.length === 0 ? (
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 text-center text-gray-400">
-              No data available for the selected date range.
+              {t('reports.no_data')}
             </div>
           ) : (
             <div className="space-y-8">
@@ -581,19 +583,19 @@ export default function BusinessDashboard() {
                     <h3 className="text-lg font-semibold text-white">{formatDateForDisplay(dateRange.startDate)} - {formatDateForDisplay(dateRange.endDate)}</h3>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                       <div>
-                        <p className="text-sm text-gray-400">Cash Income</p>
+                        <p className="text-sm text-gray-400">{t('reports.cash_income')}</p>
                         <p className="text-xl font-bold text-green-400">{formatCurrency(monthStat.totalCash)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">POS Income</p>
+                        <p className="text-sm text-gray-400">{t('reports.pos_income')}</p>
                         <p className="text-xl font-bold text-green-400">{formatCurrency(monthStat.totalPos)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Expenses</p>
+                        <p className="text-sm text-gray-400">{t('reports.expenses')}</p>
                         <p className="text-xl font-bold text-red-400">{formatCurrency(monthStat.totalExpenses)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Net Profit</p>
+                        <p className="text-sm text-gray-400">{t('reports.net_profit')}</p>
                         <p className={`text-xl font-bold ${monthStat.totalNet >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(monthStat.totalNet)}
                         </p>
@@ -602,25 +604,25 @@ export default function BusinessDashboard() {
                   </div>
                   
                   <div className="p-6">
-                    <h4 className="text-md font-semibold text-white mb-4">User Breakdown</h4>
+                    <h4 className="text-md font-semibold text-white mb-4">{t('reports.user_breakdown')}</h4>
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead className="bg-gray-700">
                           <tr>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              User
+                              {t('reports.user')}
                             </th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              Cash Income
+                              {t('reports.cash_income')}
                             </th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              POS Income
+                              {t('reports.pos_income')}
                             </th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              Expenses
+                              {t('reports.expenses')}
                             </th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              Net
+                              {t('reports.net_profit')}
                             </th>
                           </tr>
                         </thead>

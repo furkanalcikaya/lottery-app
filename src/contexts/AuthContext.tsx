@@ -8,6 +8,7 @@ interface AuthUser {
   role: 'business' | 'employee';
   businessId: string;
   name?: string;
+  companyName?: string;
 }
 
 interface AuthContextType {

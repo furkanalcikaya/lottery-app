@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface IncomeEntry {
@@ -18,6 +19,7 @@ interface IncomeEntry {
 }
 
 export default function EmployeeDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   
   const formatDateForInput = (date: Date) => {
@@ -168,7 +170,7 @@ export default function EmployeeDashboard() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-white">Daily Income & Expenses</h1>
+        <h1 className="text-3xl font-bold text-white">{t('dashboard.employee_title')}</h1>
         <button
           onClick={() => {
             setShowForm(true);
@@ -182,7 +184,7 @@ export default function EmployeeDashboard() {
           }}
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
-          Add Today&apos;s End of Day
+          {t('income.add_button')}
         </button>
       </div>
 
@@ -195,13 +197,13 @@ export default function EmployeeDashboard() {
       {showForm && (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <h2 className="text-xl font-semibold text-white mb-4">
-            {editingEntry ? 'Edit Entry' : 'Add New Entry'}
+            {editingEntry ? t('income.edit_title') : t('income.add_title')}
           </h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Date
+                {t('income.date')}
               </label>
               <input
                 type="date"
@@ -214,8 +216,8 @@ export default function EmployeeDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Cash Income (₺)
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {t('income.cash_income')}
                   </label>
                 <input
                   type="number"
@@ -229,7 +231,7 @@ export default function EmployeeDashboard() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                                      POS Income (₺)
+                  {t('income.pos_income')}
                 </label>
                 <input
                   type="number"
@@ -242,8 +244,8 @@ export default function EmployeeDashboard() {
               </div>
 
               <div>
-                                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Expenses (₺)
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {t('income.expenses')}
                   </label>
                 <input
                   type="number"
@@ -261,7 +263,7 @@ export default function EmployeeDashboard() {
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
-                {editingEntry ? 'Update Entry' : 'Save Entry'}
+                {editingEntry ? t('income.update') : t('income.save')}
               </button>
               <button
                 type="button"
@@ -271,7 +273,7 @@ export default function EmployeeDashboard() {
                 }}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
-                Cancel
+                {t('income.cancel')}
               </button>
             </div>
           </form>
@@ -280,12 +282,12 @@ export default function EmployeeDashboard() {
 
       <div className="bg-gray-800 rounded-lg border border-gray-700">
         <div className="p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white">Recent Entries</h2>
+          <h2 className="text-xl font-semibold text-white">{t('income.recent_entries')}</h2>
         </div>
         
         {entries.length === 0 ? (
           <div className="p-6 text-center text-gray-400">
-            No entries found. Add your first entry to get started!
+            {t('income.no_entries')}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -293,22 +295,22 @@ export default function EmployeeDashboard() {
               <thead className="bg-gray-700">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Date
+                    {t('income.date')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Cash Income
+                    {t('income.cash_income')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    POS Income
+                    {t('income.pos_income')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Expenses
+                    {t('income.expenses')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Net
+                    {t('income.net_profit')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Actions
+                    {t('income.actions')}
                   </th>
                 </tr>
               </thead>
@@ -338,13 +340,13 @@ export default function EmployeeDashboard() {
                             onClick={() => handleEdit(entry)}
                             className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors"
                           >
-                            Edit
+                            {t('income.edit')}
                           </button>
                           <button
                             onClick={() => handleDelete(entry._id)}
                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
                           >
-                            Delete
+                            {t('income.delete')}
                           </button>
                         </div>
                       </td>
