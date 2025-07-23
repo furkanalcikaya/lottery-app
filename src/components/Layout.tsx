@@ -40,7 +40,7 @@ export default function Layout({ children }: LayoutProps) {
   const companyName = user.companyName || user.name || user.username;
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-900 flex flex-col">
       <nav className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -77,7 +77,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </nav>
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
     </div>

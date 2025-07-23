@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import EmployeeDashboard from './EmployeeDashboard';
 
 interface Employee {
@@ -42,6 +43,7 @@ interface MonthlyStats {
 
 export default function BusinessDashboard() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'income' | 'reports'>('overview');
   const [refreshKey, setRefreshKey] = useState(0);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -52,8 +54,20 @@ export default function BusinessDashboard() {
   const [employeeFormData, setEmployeeFormData] = useState({
     name: '',
     username: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
+  const [showEmployeePassword, setShowEmployeePassword] = useState(false);
+  const [showEmployeeConfirmPassword, setShowEmployeeConfirmPassword] = useState(false);
+  const [showBusinessPasswordForm, setShowBusinessPasswordForm] = useState(false);
+  const [businessPasswordData, setBusinessPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showBusinessCurrentPassword, setShowBusinessCurrentPassword] = useState(false);
+  const [showBusinessNewPassword, setShowBusinessNewPassword] = useState(false);
+  const [showBusinessConfirmPassword, setShowBusinessConfirmPassword] = useState(false);
 
   const [error, setError] = useState('');
   const getCurrentMonthRange = () => {
@@ -125,6 +139,18 @@ export default function BusinessDashboard() {
     e.preventDefault();
     setError('');
 
+    // Validate password confirmation for new employees or when changing password
+    if (!editingEmployee || employeeFormData.password) {
+      if (employeeFormData.password !== employeeFormData.confirmPassword) {
+        setError(t('common.password_mismatch'));
+        return;
+      }
+      if (employeeFormData.password.length < 6) {
+        setError(t('common.password_too_short'));
+        return;
+      }
+    }
+
     try {
       let response;
       
@@ -148,7 +174,7 @@ export default function BusinessDashboard() {
         fetchEmployees();
         setShowEmployeeForm(false);
         setEditingEmployee(null);
-        setEmployeeFormData({ name: '', username: '', password: '' });
+        setEmployeeFormData({ name: '', username: '', password: '', confirmPassword: '' });
       } else {
         const errorData = await response.json();
         setError(errorData.error);
@@ -163,8 +189,11 @@ export default function BusinessDashboard() {
     setEmployeeFormData({
       name: employee.name,
       username: employee.username,
-      password: ''
+      password: '',
+      confirmPassword: ''
     });
+    setShowEmployeePassword(false);
+    setShowEmployeeConfirmPassword(false);
     setShowEmployeeForm(true);
   };
 
@@ -189,12 +218,53 @@ export default function BusinessDashboard() {
     }
   };
 
+  const handleBusinessPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
+    // Validate passwords
+    if (businessPasswordData.newPassword !== businessPasswordData.confirmPassword) {
+      setError(t('common.password_mismatch'));
+      return;
+    }
+    if (businessPasswordData.newPassword.length < 6) {
+      setError(t('common.password_too_short'));
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: businessPasswordData.currentPassword,
+          newPassword: businessPasswordData.newPassword
+        })
+      });
+
+      if (response.ok) {
+        setShowBusinessPasswordForm(false);
+        setBusinessPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setShowBusinessCurrentPassword(false);
+        setShowBusinessNewPassword(false);
+        setShowBusinessConfirmPassword(false);
+        // Show success message
+        alert('Password changed successfully!');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error);
+      }
+    } catch {
+      setError('Failed to change password');
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
-      currency: 'TRY'
+      currency: 'TRY',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
     }).format(amount);
   };
 
@@ -424,13 +494,143 @@ export default function BusinessDashboard() {
               onClick={() => {
                 setShowEmployeeForm(true);
                 setEditingEmployee(null);
-                setEmployeeFormData({ name: '', username: '', password: '' });
+                setEmployeeFormData({ name: '', username: '', password: '', confirmPassword: '' });
+                setShowEmployeePassword(false);
+                setShowEmployeeConfirmPassword(false);
               }}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
                               {t('employees.add_button')}
             </button>
           </div>
+
+          {showBusinessPasswordForm && (
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                {t('employees.change_password')}
+              </h3>
+              
+              <form onSubmit={handleBusinessPasswordChange} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {t('login.current_password')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showBusinessCurrentPassword ? "text" : "password"}
+                      value={businessPasswordData.currentPassword}
+                      onChange={(e) => setBusinessPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                      placeholder={t('login.placeholder_current_password')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowBusinessCurrentPassword(!showBusinessCurrentPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      {showBusinessCurrentPassword ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464m1.414 1.414L8.464 8.464m5.656 5.656l1.415 1.415m-1.415-1.415l1.415 1.415M14.828 14.828L16.243 16.243" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {t('login.new_password')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showBusinessNewPassword ? "text" : "password"}
+                      value={businessPasswordData.newPassword}
+                      onChange={(e) => setBusinessPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                      placeholder={t('login.placeholder_new_password')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowBusinessNewPassword(!showBusinessNewPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      {showBusinessNewPassword ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464m1.414 1.414L8.464 8.464m5.656 5.656l1.415 1.415m-1.415-1.415l1.415 1.415M14.828 14.828L16.243 16.243" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {t('login.confirm_password')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showBusinessConfirmPassword ? "text" : "password"}
+                      value={businessPasswordData.confirmPassword}
+                      onChange={(e) => setBusinessPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                      placeholder={t('login.placeholder_confirm_password')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowBusinessConfirmPassword(!showBusinessConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      {showBusinessConfirmPassword ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464m1.414 1.414L8.464 8.464m5.656 5.656l1.415 1.415m-1.415-1.415l1.415 1.415M14.828 14.828L16.243 16.243" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {t('employees.change_password')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBusinessPasswordForm(false);
+                      setBusinessPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                      setShowBusinessCurrentPassword(false);
+                      setShowBusinessNewPassword(false);
+                      setShowBusinessConfirmPassword(false);
+                    }}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {t('employees.cancel')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {showEmployeeForm && (
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
@@ -461,17 +661,69 @@ export default function BusinessDashboard() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('employees.password')} 
+                    {t('employees.password')}
                   </label>
-                  <input
-                    type="password"
-                    value={employeeFormData.password}
-                    onChange={(e) => setEmployeeFormData(prev => ({ ...prev, password: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required={!editingEmployee}
-                    placeholder={editingEmployee ? t('employees.empty_password') : t('employees.enter_password')}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showEmployeePassword ? "text" : "password"}
+                      value={employeeFormData.password}
+                      onChange={(e) => setEmployeeFormData(prev => ({ ...prev, password: e.target.value }))}
+                      className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required={!editingEmployee}
+                      placeholder={editingEmployee ? t('employees.empty_password') : t('employees.enter_password')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEmployeePassword(!showEmployeePassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      {showEmployeePassword ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464m1.414 1.414L8.464 8.464m5.656 5.656l1.415 1.415m-1.415-1.415l1.415 1.415M14.828 14.828L16.243 16.243" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
+
+                {(!editingEmployee || employeeFormData.password) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      {t('login.confirm_password')}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showEmployeeConfirmPassword ? "text" : "password"}
+                        value={employeeFormData.confirmPassword}
+                        onChange={(e) => setEmployeeFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required={!editingEmployee || !!employeeFormData.password}
+                        placeholder={t('login.placeholder_confirm_password')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEmployeeConfirmPassword(!showEmployeeConfirmPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                      >
+                        {showEmployeeConfirmPassword ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464m1.414 1.414L8.464 8.464m5.656 5.656l1.415 1.415m-1.415-1.415l1.415 1.415M14.828 14.828L16.243 16.243" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-3">
                   <button
                     type="submit"
@@ -524,6 +776,39 @@ export default function BusinessDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
+                    {/* Business Owner Row */}
+                    <tr className="text-gray-300 bg-gray-750">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <span>{user?.name || user?.companyName || user?.username}</span>
+                          <span className="ml-2 px-2 py-1 text-xs bg-blue-600 text-white rounded">
+                            {t('employees.business_owner')}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {user?.username}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        -
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            setShowBusinessPasswordForm(true);
+                            setBusinessPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                            setShowBusinessCurrentPassword(false);
+                            setShowBusinessNewPassword(false);
+                            setShowBusinessConfirmPassword(false);
+                          }}
+                          className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                        >
+                          {t('employees.change_password')}
+                        </button>
+                      </td>
+                    </tr>
+                    
+                    {/* Employee Rows */}
                     {employees.map((employee) => (
                       <tr key={employee._id} className="text-gray-300">
                         <td className="px-6 py-4 whitespace-nowrap">

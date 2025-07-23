@@ -7,9 +7,10 @@ const enTranslations = {
     "logout": "Logout"
   },
   "login": {
-    "title": "Income Manager",
+    "title": "Income Management",
     "subtitle_login": "Sign in to your account",
     "subtitle_register": "Register your business",
+    "business_owner_name": "Business Owner Name",
     "company_name": "Company Name",
     "username": "Username",
     "password": "Password",
@@ -17,9 +18,16 @@ const enTranslations = {
     "register_button": "Register",
     "switch_to_register": "New business? Register here",
     "switch_to_login": "Already have an account? Sign in",
+    "placeholder_business_owner_name": "Enter business owner name",
     "placeholder_company": "Enter your company name",
     "placeholder_username": "Enter your username",
-    "placeholder_password": "Enter your password"
+    "placeholder_password": "Enter your password",
+    "confirm_password": "Confirm Password",
+    "placeholder_confirm_password": "Confirm your password",
+    "current_password": "Current Password",
+    "new_password": "New Password",
+    "placeholder_current_password": "Enter current password",
+    "placeholder_new_password": "Enter new password"
   },
   "dashboard": {
     "business_title": "Business Dashboard",
@@ -62,7 +70,9 @@ const enTranslations = {
     "edit_employee": "Edit Employee",
     "add_employee": "Add New Employee",
     "empty_password": "Leave empty to keep current password!",
-    "enter_password": "Enter password"
+    "enter_password": "Enter password",
+    "business_owner": "Business Owner",
+    "change_password": "Change Password"
   },
   "income": {
     "add_button": "Add Today's End of Day",
@@ -98,7 +108,7 @@ const enTranslations = {
     "user_breakdown": "User Breakdown",
     "user": "User",
     "total": "Total",
-    "description": "Reports for the selected date range"
+    "description": "Reports for the Selected Date Range"
   },
   "common": {
     "loading": "Loading...",
@@ -108,7 +118,14 @@ const enTranslations = {
     "failed_to_save": "Failed to save entry",
     "failed_to_delete": "Failed to delete entry",
     "failed_to_create": "Failed to create employee",
-    "failed_to_update": "Failed to update employee"
+    "failed_to_update": "Failed to update employee",
+    "password_mismatch": "Passwords do not match",
+    "password_too_short": "Password must be at least 6 characters long"
+  },
+  "footer": { 
+    "all_rights_reserved": "All Rights Reserved.",
+    "website_by": "This website made by",
+    "website_by_furkan_alcikaya": "."
   }
 };
 
@@ -117,9 +134,10 @@ const trTranslations = {
     "logout": "Çıkış"
   },
   "login": {
-    "title": "Income Manager",
+    "title": "Income Management",
     "subtitle_login": "Hesabınıza giriş yapın",
     "subtitle_register": "İşletmenizle hesap oluşturun",
+    "business_owner_name": "İşletme Sahibi Adı",
     "company_name": "Şirket Adı",
     "username": "Kullanıcı Adı",
     "password": "Şifre",
@@ -127,9 +145,16 @@ const trTranslations = {
     "register_button": "Kayıt Ol",
     "switch_to_register": "Yeni işletme? Buradan kayıt olun",
     "switch_to_login": "Zaten hesabınız var mı? Giriş yapın",
+    "placeholder_business_owner_name": "İşletme sahibi adını girin",
     "placeholder_company": "Şirket adınızı girin",
     "placeholder_username": "Kullanıcı adınızı girin",
-    "placeholder_password": "Şifrenizi girin"
+    "placeholder_password": "Şifrenizi girin",
+    "confirm_password": "Şifre Onayı",
+    "placeholder_confirm_password": "Şifrenizi tekrar girin",
+    "current_password": "Mevcut Şifre",
+    "new_password": "Yeni Şifre",
+    "placeholder_current_password": "Mevcut şifrenizi girin",
+    "placeholder_new_password": "Yeni şifrenizi girin"
   },
   "dashboard": {
     "business_title": "İşletme Paneli",
@@ -172,7 +197,9 @@ const trTranslations = {
     "edit_employee": "Çalışanı Düzenle",
     "add_employee": "Yeni Çalışan Ekle",
     "empty_password": "Aynı şifreyi kullanmak için boş bırakınız!",
-    "enter_password": "Şifre girin"
+    "enter_password": "Şifre girin",
+    "business_owner": "İşletme Sahibi",
+    "change_password": "Şifre Değiştir"
   },
   "income": {
     "add_button": "Bugünün Kapanışını Ekle",
@@ -218,7 +245,14 @@ const trTranslations = {
     "failed_to_save": "Giriş kaydedilemedi",
     "failed_to_delete": "Giriş silinemedi",
     "failed_to_create": "Çalışan oluşturulamadı",
-    "failed_to_update": "Çalışan güncellenemedi"
+    "failed_to_update": "Çalışan güncellenemedi",
+    "password_mismatch": "Şifreler eşleşmiyor",
+    "password_too_short": "Şifre en az 6 karakter olmalıdır"
+  },
+  "footer": {
+    "all_rights_reserved": "Tüm Hakları Saklıdır.",
+    "website_by": "Bu web sitesi",
+    "website_by_furkan_alcikaya": " tarafından yapılmıştır."
   }
 };
 

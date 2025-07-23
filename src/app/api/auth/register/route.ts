@@ -5,11 +5,11 @@ import { createAuthResponse } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { companyName, username, password } = await request.json();
+    const { name, companyName, username, password } = await request.json();
 
-    if (!companyName || !username || !password) {
+    if (!name || !companyName || !username || !password) {
       return NextResponse.json(
-        { error: 'Company name, username and password are required' },
+        { error: 'Name, company name, username and password are required' },
         { status: 400 }
       );
     }
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Create new business
     const business = new Business({
+      name,
       companyName,
       username,
       password
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       username: business.username,
       role: 'business' as const,
       businessId: business._id.toString(),
-      name: business.companyName,
+      name: business.name || business.companyName,
       companyName: business.companyName
     };
 

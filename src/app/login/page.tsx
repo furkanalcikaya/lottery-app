@@ -5,14 +5,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
+import Footer from '@/components/Footer';
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({
+    name: '',
     companyName: '',
     username: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,7 +42,18 @@ export default function LoginPage() {
 
     try {
       if (isRegister) {
-        await register(formData.companyName, formData.username, formData.password);
+        // Check password confirmation
+        if (formData.password !== formData.confirmPassword) {
+          setError(t('common.password_mismatch'));
+          setLoading(false);
+          return;
+        }
+        if (formData.password.length < 6) {
+          setError(t('common.password_too_short'));
+          setLoading(false);
+          return;
+        }
+        await register(formData.name, formData.companyName, formData.username, formData.password);
       } else {
         await login(formData.username, formData.password);
       }
@@ -59,119 +73,158 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="w-full max-w-md space-y-8">
-        {/* Language Selector */}
-        <div className="flex justify-center">
-          <button
-            onClick={toggleLanguage}
-            className="text-gray-300 hover:text-white text-sm font-medium transition-colors"
-          >
-            <span className={language === 'TR' ? 'text-white' : 'text-gray-400'}>TR</span>
-            <span className="text-gray-500 mx-1">|</span>
-            <span className={language === 'EN' ? 'text-white' : 'text-gray-400'}>EN</span>
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
+          {/* Language Selector */}
+          <div className="text-center">
+                <button
+                  onClick={toggleLanguage}
+                  className="text-gray-300 hover:text-white text-sm font-medium transition-colors"
+                >
+                  <span className={language === 'TR' ? 'text-white' : 'text-gray-400'}>TR</span>
+                  <span className="text-gray-500 mx-1">|</span>
+                  <span className={language === 'EN' ? 'text-white' : 'text-gray-400'}>EN</span>
+                </button>
+              </div>
+          
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-2">
+              {t('login.title')}
+            </h1>
+            <p className="text-gray-400">
+              {isRegister ? t('login.subtitle_register') : t('login.subtitle_login')}
+            </p>
+          </div>
 
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            {t('login.title')}
-          </h1>
-          <p className="text-gray-400">
-            {isRegister ? t('login.subtitle_register') : t('login.subtitle_login')}
-          </p>
-        </div>
+          <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {isRegister && (
+                <>
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+                      {t('login.business_owner_name')}
+                    </label>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required={isRegister}
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder={t('login.placeholder_business_owner_name')}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="companyName" className="block text-sm font-medium text-gray-300 mb-2">
+                      {t('login.company_name')}
+                    </label>
+                    <input
+                      id="companyName"
+                      name="companyName"
+                      type="text"
+                      required={isRegister}
+                      value={formData.companyName}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder={t('login.placeholder_company')}
+                    />
+                  </div>
+                </>
+              )}
 
-        <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {isRegister && (
               <div>
-                <label htmlFor="companyName" className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('login.company_name')}
+                <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+                  {t('login.username')}
                 </label>
                 <input
-                  id="companyName"
-                  name="companyName"
+                  id="username"
+                  name="username"
                   type="text"
-                  required={isRegister}
-                  value={formData.companyName}
+                  required
+                  value={formData.username}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder={t('login.placeholder_company')}
+                  placeholder={t('login.placeholder_username')}
                 />
               </div>
-            )}
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
-                {t('login.username')}
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder={t('login.placeholder_username')}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                {t('login.password')}
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder={t('login.placeholder_password')}
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
-                {error}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                  {t('login.password')}
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder={t('login.placeholder_password')}
+                />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:transform-none"
-            >
-              {loading 
-                ? t('common.loading')
-                : isRegister 
-                  ? t('login.register_button')
-                  : t('login.login_button')
-              }
-            </button>
-          </form>
+              {isRegister && (
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                    {t('login.confirm_password')}
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required={isRegister}
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder={t('login.placeholder_confirm_password')}
+                  />
+                </div>
+              )}
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsRegister(!isRegister);
-                setError('');
-                setFormData({ companyName: '', username: '', password: '' });
-              }}
-              className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
-            >
-              {isRegister 
-                ? t('login.switch_to_login')
-                : t('login.switch_to_register')
-              }
-            </button>
+              {error && (
+                <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:transform-none"
+              >
+                {loading 
+                  ? t('common.loading')
+                  : isRegister 
+                    ? t('login.register_button')
+                    : t('login.login_button')
+                }
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRegister(!isRegister);
+                  setError('');
+                  setFormData({ name: '', companyName: '', username: '', password: '', confirmPassword: '' });
+                }}
+                className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+              >
+                {isRegister 
+                  ? t('login.switch_to_login')
+                  : t('login.switch_to_register')
+                }
+              </button>
+            </div>
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 } 

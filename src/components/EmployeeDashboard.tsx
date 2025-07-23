@@ -74,9 +74,9 @@ export default function EmployeeDashboard() {
 
     const payload = {
       date: formData.date,
-      cashIncome: parseFloat(formData.cashIncome) || 0,
-      posIncome: parseFloat(formData.posIncome) || 0,
-      expenses: parseFloat(formData.expenses) || 0
+      cashIncome: parseInt(formData.cashIncome) || 0,
+      posIncome: parseInt(formData.posIncome) || 0,
+      expenses: parseInt(formData.expenses) || 0
     };
 
     try {
@@ -126,6 +126,11 @@ export default function EmployeeDashboard() {
     setShowForm(true);
   };
 
+  const handleNumberInputChange = (field: 'cashIncome' | 'posIncome' | 'expenses', value: string) => {
+    // Only allow digits (whole numbers)
+    const numbersOnly = value.replace(/[^0-9]/g, '');
+    setFormData(prev => ({ ...prev, [field]: numbersOnly }));
+  };
 
 
   const handleDelete = async (id: string) => {
@@ -147,7 +152,9 @@ export default function EmployeeDashboard() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
-      currency: 'TRY'
+      currency: 'TRY',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
     }).format(amount);
   };
 
@@ -221,11 +228,18 @@ export default function EmployeeDashboard() {
                   </label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
+                  min="0"
                   value={formData.cashIncome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cashIncome: e.target.value }))}
+                  onChange={(e) => handleNumberInputChange('cashIncome', e.target.value)}
+                  onKeyDown={(e) => {
+                    // Prevent decimal point, minus sign, and 'e' (scientific notation)
+                    if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
+                  placeholder="0"
                 />
               </div>
 
@@ -235,11 +249,18 @@ export default function EmployeeDashboard() {
                 </label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
+                  min="0"
                   value={formData.posIncome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, posIncome: e.target.value }))}
+                  onChange={(e) => handleNumberInputChange('posIncome', e.target.value)}
+                  onKeyDown={(e) => {
+                    // Prevent decimal point, minus sign, and 'e' (scientific notation)
+                    if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
+                  placeholder="0"
                 />
               </div>
 
@@ -249,11 +270,18 @@ export default function EmployeeDashboard() {
                   </label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
+                  min="0"
                   value={formData.expenses}
-                  onChange={(e) => setFormData(prev => ({ ...prev, expenses: e.target.value }))}
+                  onChange={(e) => handleNumberInputChange('expenses', e.target.value)}
+                  onKeyDown={(e) => {
+                    // Prevent decimal point, minus sign, and 'e' (scientific notation)
+                    if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
+                  placeholder="0"
                 />
               </div>
             </div>

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       username: user.username,
       role,
       businessId,
-      name: role === 'employee' ? user.name : user.companyName,
+      name: role === 'employee' ? user.name : (user.name || user.companyName),
       companyName: role === 'business' ? user.companyName : user.business?.companyName
     };
 
