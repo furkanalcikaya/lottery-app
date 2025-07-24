@@ -124,7 +124,7 @@ const enTranslations = {
   },
   "footer": { 
     "all_rights_reserved": "All Rights Reserved.",
-    "website_by": "This website made by",
+    "website_by": "This website was developed by",
     "website_by_furkan_alcikaya": "."
   }
 };
@@ -252,7 +252,7 @@ const trTranslations = {
   "footer": {
     "all_rights_reserved": "Tüm Hakları Saklıdır.",
     "website_by": "Bu web sitesi",
-    "website_by_furkan_alcikaya": " tarafından yapılmıştır."
+    "website_by_furkan_alcikaya": " tarafından geliştirilmiştir."
   }
 };
 
@@ -261,12 +261,11 @@ const resources = {
   TR: { translation: trTranslations },
 };
 
-// Initialize i18n immediately
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: "TR", // Default to Turkish
+    lng: "TR",
     fallbackLng: "TR",
     interpolation: {
       escapeValue: false,
