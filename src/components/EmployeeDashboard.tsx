@@ -68,6 +68,7 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     fetchEntries();
     fetchExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchEntries = useCallback(async () => {
@@ -138,7 +139,7 @@ export default function EmployeeDashboard() {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to save entry');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to save entry');
     }
   };
@@ -181,7 +182,7 @@ export default function EmployeeDashboard() {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to save expense');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to save expense');
     }
   };

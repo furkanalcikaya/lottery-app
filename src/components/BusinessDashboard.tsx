@@ -144,17 +144,7 @@ export default function BusinessDashboard() {
     });
   };
 
-  useEffect(() => {
-    fetchEmployees();
-    fetchEntries();
-    fetchExpenses();
-  }, []);
 
-  // Fetch entries when date range changes or when refreshKey changes
-  useEffect(() => {
-    fetchEntries();
-    fetchExpenses();
-  }, [dateRange, refreshKey]);
 
   const fetchEmployees = async () => {
     try {
@@ -200,6 +190,20 @@ export default function BusinessDashboard() {
     }
   }, [dateRange.startDate, dateRange.endDate]);
 
+  useEffect(() => {
+    fetchEmployees();
+    fetchEntries();
+    fetchExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch entries when date range changes or when refreshKey changes
+  useEffect(() => {
+    fetchEntries();
+    fetchExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange, refreshKey]);
+
   const handleEmployeeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -244,7 +248,7 @@ export default function BusinessDashboard() {
         const errorData = await response.json();
         setError(errorData.error);
       }
-    } catch (error) {
+    } catch {
       setError(editingEmployee ? 'Failed to update employee' : 'Failed to create employee');
     }
   };
@@ -428,30 +432,30 @@ export default function BusinessDashboard() {
     return Object.values(monthlyData).sort((a, b) => b.month.localeCompare(a.month));
   };
 
-  const getTotalStats = () => {
-    const incomeTotals = entries.reduce(
-      (acc, entry) => ({
-        cash: acc.cash + entry.cashIncome,
-        pos: acc.pos + entry.posIncome
-      }),
-      { cash: 0, pos: 0 }
-    );
-    
-    const expenseTotal = expenses.reduce(
-      (acc, expense) => acc + expense.amount,
-      0
-    );
-    
-    const totals = {
-      ...incomeTotals,
-      expenses: expenseTotal
-    };
-    
-    return {
-      ...totals,
-      net: totals.cash + totals.pos - totals.expenses
-    };
-  };
+  // const getTotalStats = () => {
+  //   const incomeTotals = entries.reduce(
+  //     (acc, entry) => ({
+  //       cash: acc.cash + entry.cashIncome,
+  //       pos: acc.pos + entry.posIncome
+  //     }),
+  //     { cash: 0, pos: 0 }
+  //   );
+  //   
+  //   const expenseTotal = expenses.reduce(
+  //     (acc, expense) => acc + expense.amount,
+  //     0
+  //   );
+  //   
+  //   const totals = {
+  //     ...incomeTotals,
+  //     expenses: expenseTotal
+  //   };
+  //   
+  //   return {
+  //     ...totals,
+  //     net: totals.cash + totals.pos - totals.expenses
+  //   };
+  // };
 
   const getCurrentMonthStats = () => {
     const now = new Date();
