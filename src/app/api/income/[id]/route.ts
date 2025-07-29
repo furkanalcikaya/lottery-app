@@ -16,7 +16,7 @@ export async function PUT(
       );
     }
 
-    const { cashIncome, posIncome, expenses } = await request.json();
+    const { cashIncome, posIncome } = await request.json();
 
     await initMongoose();
 
@@ -53,7 +53,6 @@ export async function PUT(
     // Update entry
     entry.cashIncome = Number(cashIncome) || 0;
     entry.posIncome = Number(posIncome) || 0;
-    entry.expenses = Number(expenses) || 0;
 
     await entry.save();
 

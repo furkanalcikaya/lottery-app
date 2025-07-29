@@ -31,7 +31,7 @@ export default function RootLayout({
       >
         <I18nProvider>
           <AuthProvider>
-            {children}
+        {children}
           </AuthProvider>
         </I18nProvider>
       </body>

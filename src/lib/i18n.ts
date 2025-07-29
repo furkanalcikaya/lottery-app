@@ -91,7 +91,14 @@ const enTranslations = {
     "cancel": "Cancel",
     "no_entries": "No entries found.",
     "recent_entries": "Recent Entries",
-    "net_profit": "Net Profit"
+    "net_profit": "Net Profit",
+    "management": "Income Management",
+    "add_entry": "Add Income Entry",
+    "edit_entry": "Edit Income Entry",
+    "update_entry": "Update Entry",
+    "total": "Total Income",
+    "cash": "Cash Income",
+    "pos": "POS Income"
   },
   "reports": {
     "title": "Reports",
@@ -105,10 +112,13 @@ const enTranslations = {
     "pos_income": "POS Income (₺)",
     "expenses": "Expenses (₺)",
     "net_profit": "Net Profit (₺)",
-    "user_breakdown": "User Breakdown",
+    "user_breakdown_income": "User Breakdown - Incomes",
+    "user_breakdown_expenses": "User Breakdown - Expenses",
     "user": "User",
-    "total": "Total",
-    "description": "Reports for the Selected Date Range"
+    "total_header": "Total",
+    "description": "Reports for the Selected Date Range",
+    "this_month": "This Month",
+    "today": "Today"
   },
   "common": {
     "loading": "Loading...",
@@ -121,6 +131,21 @@ const enTranslations = {
     "failed_to_update": "Failed to update employee",
     "password_mismatch": "Passwords do not match",
     "password_too_short": "Password must be at least 6 characters long"
+  },
+  "expense": {
+    "management": "Expense Management",
+    "add_button": "Add Expense",
+    "edit_button": "Edit Expense",
+    "update": "Update Expense",
+    "description": "Expense Description",
+    "description_placeholder": "Enter Expense Details",
+    "amount": "Expense Amount",
+    "date": "Expense Date",
+    "no_expenses": "No expenses found",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel"
   },
   "footer": { 
     "all_rights_reserved": "All Rights Reserved.",
@@ -218,7 +243,14 @@ const trTranslations = {
     "cancel": "İptal",
     "no_entries": "Hiç giriş bulunamadı.",
     "recent_entries": "Son Girişler",
-    "net_profit": "Net Kar"
+    "net_profit": "Net Kar",
+    "management": "Gelir Yönetimi",
+    "add_entry": "Gelir Girişi Ekle",
+    "edit_entry": "Gelir Girişini Düzenle",
+    "update_entry": "Girişi Güncelle",
+    "total": "Toplam Gelir",
+    "cash": "Nakit Gelir",
+    "pos": "POS Gelir"
   },
   "reports": {
     "title": "Raporlar",
@@ -232,10 +264,13 @@ const trTranslations = {
     "pos_income": "POS Gelir (₺)",
     "expenses": "Giderler (₺)",
     "net_profit": "Net Kar (₺)",
-    "user_breakdown": "Kullanıcı Dökümü",
+    "user_breakdown_income": "Kullanıcı Dökümü - Gelirler",
+    "user_breakdown_expenses": "Kullanıcı Dökümü - Giderler",
     "user": "Kullanıcı",
-    "total": "Toplam",
-    "description": "Seçilen Tarih Aralığındaki Raporlar"
+    "total_header": "Toplam",
+    "description": "Seçilen Tarih Aralığındaki Raporlar",
+    "this_month": "Bu Ay",
+    "today": "Bugün"
   },
   "common": {
     "loading": "Yükleniyor...",
@@ -248,6 +283,21 @@ const trTranslations = {
     "failed_to_update": "Çalışan güncellenemedi",
     "password_mismatch": "Şifreler eşleşmiyor",
     "password_too_short": "Şifre en az 6 karakter olmalıdır"
+  },
+  "expense": {
+    "management": "Gider Yönetimi",
+    "add_button": "Gider Ekle",
+    "edit_button": "Gider Düzenle",
+    "update": "Gider Güncelle",
+    "description": "Gider Açıklaması",
+    "description_placeholder": "Gider Detayını Giriniz",
+    "amount": "Gider Tutarı",
+    "date": "Gider Tarihi",
+    "no_expenses": "Gider bulunamadı.",
+    "actions": "İşlemler",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "cancel": "İptal"
   },
   "footer": {
     "all_rights_reserved": "Tüm Hakları Saklıdır.",

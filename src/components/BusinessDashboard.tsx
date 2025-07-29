@@ -17,7 +17,19 @@ interface IncomeEntry {
   date: string;
   cashIncome: number;
   posIncome: number;
-  expenses: number;
+  user: {
+    _id: string;
+    name?: string;
+    username: string;
+  };
+  createdAt: string;
+}
+
+interface ExpenseEntry {
+  _id: string;
+  date: string;
+  description: string;
+  amount: number;
   user: {
     _id: string;
     name?: string;
@@ -48,6 +60,7 @@ export default function BusinessDashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [entries, setEntries] = useState<IncomeEntry[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -95,14 +108,52 @@ export default function BusinessDashboard() {
 
   const [dateRange, setDateRange] = useState(getCurrentMonthRange());
 
+  const setThisMonthRange = () => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    setDateRange({
+      startDate: formatDate(firstDayOfMonth),
+      endDate: formatDate(lastDayOfMonth)
+    });
+  };
+
+  const setTodayRange = () => {
+    const today = new Date();
+    
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const todayStr = formatDate(today);
+    
+    setDateRange({
+      startDate: todayStr,
+      endDate: todayStr
+    });
+  };
+
   useEffect(() => {
     fetchEmployees();
     fetchEntries();
+    fetchExpenses();
   }, []);
 
   // Fetch entries when date range changes or when refreshKey changes
   useEffect(() => {
     fetchEntries();
+    fetchExpenses();
   }, [dateRange, refreshKey]);
 
   const fetchEmployees = async () => {
@@ -132,6 +183,20 @@ export default function BusinessDashboard() {
       console.error('Error fetching entries:', error);
     } finally {
       setLoading(false);
+    }
+  }, [dateRange.startDate, dateRange.endDate]);
+
+  const fetchExpenses = useCallback(async () => {
+    try {
+      const url = `/api/expenses?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched expenses:', data.expenses);
+        setExpenses(data.expenses);
+      }
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
     }
   }, [dateRange.startDate, dateRange.endDate]);
 
@@ -279,6 +344,7 @@ export default function BusinessDashboard() {
   const getMonthlyStats = (): MonthlyStats[] => {
     const monthlyData: { [key: string]: MonthlyStats } = {};
     
+    // Process income entries
     entries.forEach(entry => {
       const date = new Date(entry.date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -298,10 +364,8 @@ export default function BusinessDashboard() {
       const monthStat = monthlyData[monthKey];
       monthStat.totalCash += entry.cashIncome;
       monthStat.totalPos += entry.posIncome;
-      monthStat.totalExpenses += entry.expenses;
-      monthStat.totalNet = monthStat.totalCash + monthStat.totalPos - monthStat.totalExpenses;
       
-      // Update user breakdown
+      // Update user breakdown for income
       const userName = entry.user.name || entry.user.username;
       let userStat = monthStat.userBreakdown.find(u => u.userId === entry.user._id);
       if (!userStat) {
@@ -317,21 +381,71 @@ export default function BusinessDashboard() {
       
       userStat.cashIncome += entry.cashIncome;
       userStat.posIncome += entry.posIncome;
-      userStat.expenses += entry.expenses;
+    });
+    
+    // Process expense entries
+    expenses.forEach(expense => {
+      const date = new Date(expense.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          month: monthName,
+          totalCash: 0,
+          totalPos: 0,
+          totalExpenses: 0,
+          totalNet: 0,
+          userBreakdown: []
+        };
+      }
+      
+      const monthStat = monthlyData[monthKey];
+      monthStat.totalExpenses += expense.amount;
+      
+      // Update user breakdown for expenses
+      const userName = expense.user.name || expense.user.username;
+      let userStat = monthStat.userBreakdown.find(u => u.userId === expense.user._id);
+      if (!userStat) {
+        userStat = {
+          userId: expense.user._id,
+          name: userName,
+          cashIncome: 0,
+          posIncome: 0,
+          expenses: 0
+        };
+        monthStat.userBreakdown.push(userStat);
+      }
+      
+      userStat.expenses += expense.amount;
+    });
+    
+    // Calculate net totals for each month
+    Object.values(monthlyData).forEach(monthStat => {
+      monthStat.totalNet = monthStat.totalCash + monthStat.totalPos - monthStat.totalExpenses;
     });
     
     return Object.values(monthlyData).sort((a, b) => b.month.localeCompare(a.month));
   };
 
   const getTotalStats = () => {
-    const totals = entries.reduce(
+    const incomeTotals = entries.reduce(
       (acc, entry) => ({
         cash: acc.cash + entry.cashIncome,
-        pos: acc.pos + entry.posIncome,
-        expenses: acc.expenses + entry.expenses
+        pos: acc.pos + entry.posIncome
       }),
-      { cash: 0, pos: 0, expenses: 0 }
+      { cash: 0, pos: 0 }
     );
+    
+    const expenseTotal = expenses.reduce(
+      (acc, expense) => acc + expense.amount,
+      0
+    );
+    
+    const totals = {
+      ...incomeTotals,
+      expenses: expenseTotal
+    };
     
     return {
       ...totals,
@@ -349,17 +463,31 @@ export default function BusinessDashboard() {
       return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
     });
     
-    console.log('Current month entries for stats:', currentMonthEntries);
-    console.log('All entries for debugging:', entries);
+    const currentMonthExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+    });
     
-    const totals = currentMonthEntries.reduce(
+    console.log('Current month entries for stats:', currentMonthEntries);
+    console.log('Current month expenses for stats:', currentMonthExpenses);
+    
+    const incomeTotals = currentMonthEntries.reduce(
       (acc, entry) => ({
         cash: acc.cash + entry.cashIncome,
-        pos: acc.pos + entry.posIncome,
-        expenses: acc.expenses + entry.expenses
+        pos: acc.pos + entry.posIncome
       }),
-      { cash: 0, pos: 0, expenses: 0 }
+      { cash: 0, pos: 0 }
     );
+    
+    const expenseTotal = currentMonthExpenses.reduce(
+      (acc, expense) => acc + expense.amount,
+      0
+    );
+    
+    const totals = {
+      ...incomeTotals,
+      expenses: expenseTotal
+    };
     
     console.log('Calculated totals:', totals);
     
@@ -472,7 +600,19 @@ export default function BusinessDashboard() {
                   className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className="flex items-end">
+              <div className="flex flex-col sm:flex-row gap-2 md:items-end ">
+                <button
+                  onClick={setThisMonthRange}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  {t('reports.this_month')}
+                </button>
+                <button
+                  onClick={setTodayRange}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  {t('reports.today')}
+                </button>
                 <button
                   onClick={fetchEntries}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
@@ -889,52 +1029,99 @@ export default function BusinessDashboard() {
                     </div>
                   </div>
                   
-                  <div className="p-6">
-                    <h4 className="text-md font-semibold text-white mb-4">{t('reports.user_breakdown')}</h4>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-gray-700">
-                          <tr>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              {t('reports.user')}
-                            </th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              {t('reports.cash_income')}
-                            </th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              {t('reports.pos_income')}
-                            </th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              {t('reports.expenses')}
-                            </th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              {t('reports.net_profit')}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-700">
-                          {monthStat.userBreakdown.map((userStat) => {
-                            const userNet = userStat.cashIncome + userStat.posIncome - userStat.expenses;
-                            return (
-                              <tr key={userStat.userId} className="text-gray-300">
-                                <td className="px-4 py-2 whitespace-nowrap">{userStat.name}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-green-400">
-                                  {formatCurrency(userStat.cashIncome)}
-                                </td>
-                                <td className="px-4 py-2 whitespace-nowrap text-green-400">
-                                  {formatCurrency(userStat.posIncome)}
-                                </td>
+                  <div className="p-6 space-y-8">
+                    {/* User Income Breakdown */}
+                    <div>
+                      <h4 className="text-md font-semibold text-white mb-4">{t('reports.user_breakdown_income')}</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-700">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {t('reports.user')}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {t('reports.cash_income')}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {t('reports.pos_income')}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {t('reports.total_header')} {t('income.total')}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-700">
+                            {monthStat.userBreakdown.filter(user => user.cashIncome > 0 || user.posIncome > 0).map((userStat) => {
+                              const totalIncome = userStat.cashIncome + userStat.posIncome;
+                              return (
+                                <tr key={`income-${userStat.userId}`} className="text-gray-300">
+                                  <td className="px-4 py-2 whitespace-nowrap">{userStat.name}</td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-green-400">
+                                    {formatCurrency(userStat.cashIncome)}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-green-400">
+                                    {formatCurrency(userStat.posIncome)}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-green-400 font-medium">
+                                    {formatCurrency(totalIncome)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* User Expense Breakdown */}
+                    <div>
+                      <h4 className="text-md font-semibold text-white mb-4">{t('reports.user_breakdown_expenses')}</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-700">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {t('reports.user')}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {t('expense.description')}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {t('expense.amount')} (₺)
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {t('expense.date')}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-700">
+                            {expenses.filter(expense => {
+                              const expenseDate = new Date(expense.date);
+                              expenseDate.setHours(0, 0, 0, 0);
+                              
+                              const startDate = new Date(dateRange.startDate);
+                              startDate.setHours(0, 0, 0, 0);
+                              
+                              const endDate = new Date(dateRange.endDate);
+                              endDate.setHours(23, 59, 59, 999);
+                              
+                              return expenseDate >= startDate && expenseDate <= endDate;
+                            }).map((expense) => (
+                              <tr key={expense._id} className="text-gray-300">
+                                <td className="px-4 py-2 whitespace-nowrap">{expense.user.name || expense.user.username}</td>
+                                <td className="px-4 py-2 capitalize">{expense.description}</td>
                                 <td className="px-4 py-2 whitespace-nowrap text-red-400">
-                                  {formatCurrency(userStat.expenses)}
+                                  {formatCurrency(expense.amount)}
                                 </td>
-                                <td className={`px-4 py-2 whitespace-nowrap font-medium ${userNet >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  {formatCurrency(userNet)}
+                                <td className="px-4 py-2 whitespace-nowrap">
+                                  {formatDateForDisplay(expense.date)}
                                 </td>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 </div>

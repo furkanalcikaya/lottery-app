@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, cashIncome, posIncome, expenses } = await request.json();
+    const { date, cashIncome, posIncome } = await request.json();
 
     if (!date) {
       return NextResponse.json(
@@ -128,8 +128,7 @@ export async function POST(request: NextRequest) {
       business: user.businessId,
       date: entryDate,
       cashIncome: cashIncome || 0,
-      posIncome: posIncome || 0,
-      expenses: expenses || 0
+      posIncome: posIncome || 0
     });
 
     await entry.save();
