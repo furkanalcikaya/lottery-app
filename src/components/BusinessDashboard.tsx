@@ -144,6 +144,44 @@ export default function BusinessDashboard() {
     });
   };
 
+  const setYesterdayRange = () => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const yesterdayStr = formatDate(yesterday);
+    
+    setDateRange({
+      startDate: yesterdayStr,
+      endDate: yesterdayStr
+    });
+  };
+
+  const setLastMonthRange = () => {
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    setDateRange({
+      startDate: formatDate(lastMonth),
+      endDate: formatDate(lastDayOfLastMonth)
+    });
+  };
+
 
 
   const fetchEmployees = async () => {
@@ -501,8 +539,56 @@ export default function BusinessDashboard() {
     };
   };
 
+  const getSelectedRangeStats = () => {
+    const startDate = new Date(dateRange.startDate);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(dateRange.endDate);
+    endDate.setHours(23, 59, 59, 999);
+    
+    const selectedRangeEntries = entries.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate >= startDate && entryDate <= endDate;
+    });
+    
+    const selectedRangeExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startDate && expenseDate <= endDate;
+    });
+    
+    console.log('Selected range entries for stats:', selectedRangeEntries);
+    console.log('Selected range expenses for stats:', selectedRangeExpenses);
+    console.log('Date range:', { start: startDate, end: endDate });
+    
+    const incomeTotals = selectedRangeEntries.reduce(
+      (acc, entry) => ({
+        cash: acc.cash + entry.cashIncome,
+        pos: acc.pos + entry.posIncome
+      }),
+      { cash: 0, pos: 0 }
+    );
+    
+    const expenseTotal = selectedRangeExpenses.reduce(
+      (acc, expense) => acc + expense.amount,
+      0
+    );
+    
+    const totals = {
+      ...incomeTotals,
+      expenses: expenseTotal
+    };
+    
+    console.log('Selected range calculated totals:', totals);
+    
+    return {
+      ...totals,
+      net: totals.cash + totals.pos - totals.expenses
+    };
+  };
+
   // const stats = getTotalStats();
   const currentMonthStats = getCurrentMonthStats();
+  const selectedRangeStats = getSelectedRangeStats();
   const monthlyStats = getMonthlyStats();
 
   if (loading) {
@@ -565,20 +651,20 @@ export default function BusinessDashboard() {
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-sm font-medium text-gray-400">{t('overview.cash_income')}</h3>
-              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(currentMonthStats.cash)}</p>
+              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.cash)}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-sm font-medium text-gray-400">{t('overview.pos_income')}</h3>
-              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(currentMonthStats.pos)}</p>
+              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.pos)}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-sm font-medium text-gray-400">{t('overview.expenses')}</h3>
-              <p className="text-3xl font-bold text-red-400 mt-2">{formatCurrency(currentMonthStats.expenses)}</p>
+              <p className="text-3xl font-bold text-red-400 mt-2">{formatCurrency(selectedRangeStats.expenses)}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-sm font-medium text-gray-400">{t('overview.net_profit')}</h3>
-              <p className={`text-3xl font-bold mt-2 ${currentMonthStats.net >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {formatCurrency(currentMonthStats.net)}
+              <p className={`text-3xl font-bold mt-2 ${selectedRangeStats.net >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {formatCurrency(selectedRangeStats.net)}
               </p>
             </div>
           </div>
@@ -604,22 +690,34 @@ export default function BusinessDashboard() {
                   className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 md:items-end ">
+              <div className="flex flex-col sm:flex-row gap-2 md:items-end">
                 <button
                   onClick={setThisMonthRange}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
                 >
                   {t('reports.this_month')}
                 </button>
                 <button
+                  onClick={setLastMonthRange}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
+                >
+                  {t('reports.last_month')}
+                </button>
+                <button
                   onClick={setTodayRange}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
                 >
                   {t('reports.today')}
                 </button>
                 <button
+                  onClick={setYesterdayRange}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
+                >
+                  {t('reports.yesterday')}
+                </button>
+                <button
                   onClick={fetchEntries}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
                 >
                   {t('reports.apply_filter')}
                 </button>

@@ -118,7 +118,9 @@ const enTranslations = {
     "total_header": "Total",
     "description": "Reports for the Selected Date Range",
     "this_month": "This Month",
-    "today": "Today"
+    "last_month": "Last Month",
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "common": {
     "loading": "Loading...",
@@ -270,7 +272,9 @@ const trTranslations = {
     "total_header": "Toplam",
     "description": "Seçilen Tarih Aralığındaki Raporlar",
     "this_month": "Bu Ay",
-    "today": "Bugün"
+    "last_month": "Geçen Ay",
+    "today": "Bugün",
+    "yesterday": "Dün"
   },
   "common": {
     "loading": "Yükleniyor...",
