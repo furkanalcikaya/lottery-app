@@ -62,6 +62,7 @@ export default function EmployeeDashboard() {
   const [entries, setEntries] = useState<IncomeEntry[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loadingIncome, setLoadingIncome] = useState(true);
+  const [loadingStores, setLoadingStores] = useState(true);
   const [showIncomeForm, setShowIncomeForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<IncomeEntry | null>(null);
   const [incomeFormData, setIncomeFormData] = useState({
@@ -77,6 +78,9 @@ export default function EmployeeDashboard() {
   // Expense states
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
+
+  // Overall loading state
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseEntry | null>(null);
   const [expenseFormData, setExpenseFormData] = useState({
@@ -96,7 +100,14 @@ export default function EmployeeDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Track overall loading state
+  useEffect(() => {
+    const allDataLoaded = !loadingStores && !loadingIncome && !loadingExpenses;
+    setIsDataLoading(!allDataLoaded);
+  }, [loadingStores, loadingIncome, loadingExpenses]);
+
   const fetchStores = useCallback(async () => {
+    setLoadingStores(true);
     try {
       const response = await fetch('/api/stores');
       if (response.ok) {
@@ -105,6 +116,8 @@ export default function EmployeeDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch stores:', error);
+    } finally {
+      setLoadingStores(false);
     }
   }, []);
 
@@ -351,11 +364,16 @@ export default function EmployeeDashboard() {
     return new Date(dateString).toLocaleDateString('tr-TR');
   };
 
-  if (loadingIncome || loadingExpenses) {
+  if (isDataLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <div className="text-white mt-4">{'Yükleniyor...'}</div>
+        <div className="text-white mt-4">Veriler yükleniyor...</div>
+        <div className="text-gray-400 mt-2 text-sm">
+          {loadingStores && '• Mağazalar yükleniyor'}
+          {loadingIncome && '• Gelir verileri yükleniyor'}  
+          {loadingExpenses && '• Gider verileri yükleniyor'}
+        </div>
       </div>
     );
   }

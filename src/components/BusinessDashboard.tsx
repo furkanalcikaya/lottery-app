@@ -720,8 +720,12 @@ export default function BusinessDashboard() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="text-white mt-4">İşletme verileri yükleniyor...</div>
+        <div className="text-gray-400 mt-2 text-sm">
+          Çalışanlar, mağazalar ve finansal veriler hazırlanıyor
+        </div>
       </div>
     );
   }
