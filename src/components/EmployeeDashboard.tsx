@@ -94,9 +94,8 @@ export default function EmployeeDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchStores();
-    fetchEntries();
-    fetchExpenses();
+    // Use the unified refresh function for initial load too
+    refreshAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -105,6 +104,66 @@ export default function EmployeeDashboard() {
     const allDataLoaded = !loadingStores && !loadingIncome && !loadingExpenses;
     setIsDataLoading(!allDataLoaded);
   }, [loadingStores, loadingIncome, loadingExpenses]);
+
+  // Unified refresh function to ensure all data is synchronized
+  const refreshAllData = useCallback(async () => {
+    setLoadingStores(true);
+    setLoadingIncome(true);
+    setLoadingExpenses(true);
+    
+    try {
+      // Fetch all data in parallel with proper error handling
+      const [storesResult, entriesResult, expensesResult] = await Promise.allSettled([
+        (async () => {
+          const response = await fetch('/api/stores');
+          if (response.ok) {
+            const data = await response.json();
+            setStores(data.stores);
+          }
+        })(),
+        (async () => {
+          const response = await fetch('/api/income');
+          if (response.ok) {
+            const data = await response.json();
+            // Filter to show only current user's entries
+            const userEntries = data.entries.filter((entry: IncomeEntry) => {
+              if (typeof entry.user === 'string') {
+                return entry.user === user?.id;
+              }
+              return entry.user?._id === user?.id;
+            });
+            setEntries(userEntries);
+          }
+        })(),
+        (async () => {
+          const response = await fetch('/api/expenses');
+          if (response.ok) {
+            const data = await response.json();
+            setExpenses(data.expenses);
+          }
+        })()
+      ]);
+
+      // Log any failures
+      if (storesResult.status === 'rejected') {
+        console.error('Failed to fetch stores:', storesResult.reason);
+      }
+      if (entriesResult.status === 'rejected') {
+        console.error('Failed to fetch entries:', entriesResult.reason);
+      }
+      if (expensesResult.status === 'rejected') {
+        console.error('Failed to fetch expenses:', expensesResult.reason);
+      }
+
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+    } finally {
+      // Always reset loading states
+      setLoadingStores(false);
+      setLoadingIncome(false);
+      setLoadingExpenses(false);
+    }
+  }, [user?.id]);
 
   const fetchStores = useCallback(async () => {
     setLoadingStores(true);
@@ -186,7 +245,8 @@ export default function EmployeeDashboard() {
       });
 
       if (response.ok) {
-        await fetchEntries();
+        // Refresh all data to ensure consistency
+        await refreshAllData();
         setShowIncomeForm(false);
         setEditingEntry(null);
         setIncomeFormData({
@@ -245,7 +305,8 @@ export default function EmployeeDashboard() {
       });
 
       if (response.ok) {
-        await fetchExpenses();
+        // Refresh all data to ensure consistency
+        await refreshAllData();
         setShowExpenseForm(false);
         setEditingExpense(null);
         setExpenseFormData({
@@ -298,7 +359,8 @@ export default function EmployeeDashboard() {
         });
 
         if (response.ok) {
-          await fetchEntries();
+          // Refresh all data to ensure consistency
+          await refreshAllData();
         }
       } catch (error) {
         console.error('Failed to delete entry:', error);
@@ -314,7 +376,8 @@ export default function EmployeeDashboard() {
         });
 
         if (response.ok) {
-          await fetchExpenses();
+          // Refresh all data to ensure consistency
+          await refreshAllData();
         }
       } catch (error) {
         console.error('Failed to delete expense:', error);
