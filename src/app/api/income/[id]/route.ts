@@ -16,7 +16,14 @@ export async function PUT(
       );
     }
 
-    const { cashIncome, posIncome } = await request.json();
+    const { 
+      cashIncome, 
+      posIncome, 
+      lotteryTicketIncome, 
+      lotteryScratchIncome, 
+      lotteryNumericalIncome,
+      store 
+    } = await request.json();
 
     await initMongoose();
 
@@ -53,6 +60,14 @@ export async function PUT(
     // Update entry
     entry.cashIncome = Number(cashIncome) || 0;
     entry.posIncome = Number(posIncome) || 0;
+    entry.lotteryTicketIncome = Number(lotteryTicketIncome) || 0;
+    entry.lotteryScratchIncome = Number(lotteryScratchIncome) || 0;
+    entry.lotteryNumericalIncome = Number(lotteryNumericalIncome) || 0;
+    
+    // Update store if provided
+    if (store) {
+      entry.store = store;
+    }
 
     await entry.save();
 

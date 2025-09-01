@@ -15,8 +15,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Restrict expense editing to business users only
+    if (authUser.role === 'employee') {
+      return NextResponse.json({ error: 'Employees cannot edit expenses' }, { status: 403 });
+    }
+
     const { id } = await params;
-    const { date, description, amount } = await request.json();
+    const { date, description, amount, store, type } = await request.json();
 
     // Find expense and verify ownership
     const expense = await ExpenseEntry.findById(id);
@@ -41,17 +46,25 @@ export async function PUT(
     }
 
     // Validate required fields
-    if (!description || amount === undefined || amount < 0) {
-      return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
+    if (!description || amount === undefined || amount < 0 || !store || !type) {
+      return NextResponse.json({ error: 'Description, amount, store, and type are required' }, { status: 400 });
+    }
+
+    // Validate type
+    if (type !== 'expense' && type !== 'payment') {
+      return NextResponse.json({ error: 'Type must be either expense or payment' }, { status: 400 });
     }
 
     // Update expense
     expense.date = entryDate;
     expense.description = description.trim();
     expense.amount = parseInt(amount);
+    expense.store = store;
+    expense.type = type;
 
     await expense.save();
     await expense.populate('user', 'name username');
+    await expense.populate('store', 'name address');
 
     return NextResponse.json({ expense });
   } catch (error) {
@@ -70,6 +83,11 @@ export async function DELETE(
     const authUser = await getAuthUser(request);
     if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Restrict expense deletion to business users only
+    if (authUser.role === 'employee') {
+      return NextResponse.json({ error: 'Employees cannot delete expenses' }, { status: 403 });
     }
 
     const { id } = await params;

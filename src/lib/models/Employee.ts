@@ -23,6 +23,7 @@ const employeeSchema = new mongoose.Schema({
     ref: 'Business',
     required: true
   },
+
   createdAt: {
     type: Date,
     default: Date.now

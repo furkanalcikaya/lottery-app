@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const businessSchema = new mongoose.Schema({
   name: {
@@ -35,16 +34,11 @@ const businessSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password before saving
-businessSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
+// Note: Password is stored in plain text for recovery purposes
 
-// Compare password method
+// Compare password method (plain text comparison)
 businessSchema.methods.comparePassword = async function(candidatePassword: string) {
-  return bcrypt.compare(candidatePassword, this.password);
+  return candidatePassword === this.password;
 };
 
 export default mongoose.models.Business || mongoose.model('Business', businessSchema); 

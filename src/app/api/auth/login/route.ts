@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       
       if (!user) {
         return NextResponse.json(
-          { error: 'Invalid credentials' },
+          { error: 'Kullanıcı adı bulunamadı' },
           { status: 401 }
         );
       }
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: 'Kullanıcı adı veya şifre hatalı' },
         { status: 401 }
       );
     }

@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 export default function Footer() {
-  const { t } = useTranslation();
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
 
   useEffect(() => {
@@ -14,7 +12,8 @@ export default function Footer() {
   return (
     <footer className="text-center py-6 mt-6">
       <p className="text-[10px] md:text-sm text-gray-400">
-        Copyright &copy; {currentYear} {t('footer.all_rights_reserved')} | {t('footer.website_by')} {' '}
+        Copyright &copy; {currentYear} Tüm hakları saklıdır. | {' '}
+        Bu web sitesi{' '}
         <a 
           href="https://linktr.ee/furkanalcikaya" 
           target="_blank" 
@@ -23,7 +22,7 @@ export default function Footer() {
         >
           Furkan Alçıkaya
         </a>
-        {t('footer.website_by_furkan_alcikaya')}
+        {' '}tarafından geliştirilmiştir.
       </p>
     </footer>
   );

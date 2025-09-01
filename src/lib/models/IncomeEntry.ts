@@ -16,6 +16,11 @@ const incomeEntrySchema = new mongoose.Schema({
     ref: 'Business',
     required: true
   },
+  store: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Store',
+    required: true
+  },
   date: {
     type: Date,
     required: true
@@ -32,7 +37,24 @@ const incomeEntrySchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
-
+  lotteryTicketIncome: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0
+  },
+  lotteryScratchIncome: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0
+  },
+  lotteryNumericalIncome: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -41,7 +63,12 @@ const incomeEntrySchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure one entry per user per date
-incomeEntrySchema.index({ user: 1, date: 1 }, { unique: true });
+// Remove the unique constraint to allow multiple entries per day
+// incomeEntrySchema.index({ user: 1, date: 1 }, { unique: true });
+
+// Add indexes for efficient querying
+incomeEntrySchema.index({ business: 1, date: 1 });
+incomeEntrySchema.index({ store: 1, date: 1 });
+incomeEntrySchema.index({ user: 1, date: 1 });
 
 export default mongoose.models.IncomeEntry || mongoose.model('IncomeEntry', incomeEntrySchema); 

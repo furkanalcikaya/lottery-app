@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { useAuth } from '@/contexts/AuthContext';
 import EmployeeDashboard from './EmployeeDashboard';
 
@@ -12,11 +12,25 @@ interface Employee {
   createdAt: string;
 }
 
+interface Store {
+  _id: string;
+  name: string;
+  createdAt: string;
+}
+
 interface IncomeEntry {
   _id: string;
   date: string;
   cashIncome: number;
   posIncome: number;
+  lotteryTicketIncome: number;
+  lotteryScratchIncome: number;
+  lotteryNumericalIncome: number;
+  store: {
+    _id: string;
+    name: string;
+    address: string;
+  };
   user: {
     _id: string;
     name?: string;
@@ -28,8 +42,14 @@ interface IncomeEntry {
 interface ExpenseEntry {
   _id: string;
   date: string;
+  type: 'expense' | 'payment';
   description: string;
   amount: number;
+  store: {
+    _id: string;
+    name: string;
+    address: string;
+  };
   user: {
     _id: string;
     name?: string;
@@ -42,23 +62,32 @@ interface MonthlyStats {
   month: string;
   totalCash: number;
   totalPos: number;
+  totalLotteryTicket: number;
+  totalLotteryScratch: number;
+  totalLotteryNumerical: number;
   totalExpenses: number;
+  totalPayments: number;
   totalNet: number;
   userBreakdown: Array<{
     userId: string;
     name: string;
     cashIncome: number;
     posIncome: number;
+    lotteryTicketIncome: number;
+    lotteryScratchIncome: number;
+    lotteryNumericalIncome: number;
     expenses: number;
+    payments: number;
   }>;
 }
 
 export default function BusinessDashboard() {
-  const { t } = useTranslation();
+
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'income' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'stores' | 'income' | 'reports'>('overview');
   const [refreshKey, setRefreshKey] = useState(0);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
   const [entries, setEntries] = useState<IncomeEntry[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +98,11 @@ export default function BusinessDashboard() {
     username: '',
     password: '',
     confirmPassword: ''
+  });
+  const [showStoreForm, setShowStoreForm] = useState(false);
+  const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [storeFormData, setStoreFormData] = useState({
+    name: ''
   });
   const [showEmployeePassword, setShowEmployeePassword] = useState(false);
   const [showEmployeeConfirmPassword, setShowEmployeeConfirmPassword] = useState(false);
@@ -83,6 +117,7 @@ export default function BusinessDashboard() {
   const [showBusinessConfirmPassword, setShowBusinessConfirmPassword] = useState(false);
 
   const [error, setError] = useState('');
+  const [selectedStoreId, setSelectedStoreId] = useState('');
   const getCurrentMonthRange = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -196,6 +231,18 @@ export default function BusinessDashboard() {
     }
   };
 
+  const fetchStores = async () => {
+    try {
+      const response = await fetch('/api/stores');
+      if (response.ok) {
+        const data = await response.json();
+        setStores(data.stores);
+      }
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+    }
+  };
+
   const fetchEntries = useCallback(async () => {
     try {
       const url = `/api/income?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
@@ -230,6 +277,7 @@ export default function BusinessDashboard() {
 
   useEffect(() => {
     fetchEmployees();
+    fetchStores();
     fetchEntries();
     fetchExpenses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -249,11 +297,11 @@ export default function BusinessDashboard() {
     // Validate password confirmation for new employees or when changing password
     if (!editingEmployee || employeeFormData.password) {
       if (employeeFormData.password !== employeeFormData.confirmPassword) {
-        setError(t('common.password_mismatch'));
+        setError('Şifreler eşleşmiyor');
         return;
       }
       if (employeeFormData.password.length < 6) {
-        setError(t('common.password_too_short'));
+        setError('Şifre en az 6 karakter olmalıdır');
         return;
       }
     }
@@ -325,17 +373,88 @@ export default function BusinessDashboard() {
     }
   };
 
+  const handleStoreSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!storeFormData.name.trim()) {
+      setError('Mağaza adı gereklidir');
+      return;
+    }
+
+    try {
+      let response;
+      
+      if (editingStore) {
+        // Update existing store
+        response = await fetch(`/api/stores/${editingStore._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(storeFormData)
+        });
+      } else {
+        // Create new store
+        response = await fetch('/api/stores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(storeFormData)
+        });
+      }
+
+      if (response.ok) {
+        fetchStores();
+        setShowStoreForm(false);
+        setEditingStore(null);
+        setStoreFormData({ name: '' });
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error);
+      }
+    } catch {
+      setError(editingStore ? 'Failed to update store' : 'Failed to create store');
+    }
+  };
+
+  const handleEditStore = (store: Store) => {
+    setEditingStore(store);
+    setStoreFormData({
+      name: store.name
+    });
+    setShowStoreForm(true);
+  };
+
+  const handleDeleteStore = async (storeId: string) => {
+    if (!confirm('Bu mağazayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/stores/${storeId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        fetchStores();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error);
+      }
+    } catch {
+      setError('Failed to delete store');
+    }
+  };
+
   const handleBusinessPasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     // Validate passwords
     if (businessPasswordData.newPassword !== businessPasswordData.confirmPassword) {
-      setError(t('common.password_mismatch'));
+              setError('Şifreler eşleşmiyor');
       return;
     }
     if (businessPasswordData.newPassword.length < 6) {
-      setError(t('common.password_too_short'));
+              setError('Şifre en az 6 karakter olmalıdır');
       return;
     }
 
@@ -383,11 +502,21 @@ export default function BusinessDashboard() {
     return `${day}-${month}-${year}`;
   };
 
-  const getMonthlyStats = (): MonthlyStats[] => {
+  const getMonthlyStats = (storeFilter?: string): MonthlyStats[] => {
     const monthlyData: { [key: string]: MonthlyStats } = {};
     
+    // Filter entries by store if specified
+    const filteredEntries = storeFilter 
+      ? entries.filter(entry => entry.store._id === storeFilter)
+      : entries;
+    
+    // Filter expenses by store if specified  
+    const filteredExpenses = storeFilter
+      ? expenses.filter(expense => expense.store._id === storeFilter)
+      : expenses;
+    
     // Process income entries
-    entries.forEach(entry => {
+    filteredEntries.forEach(entry => {
       const date = new Date(entry.date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
@@ -397,7 +526,11 @@ export default function BusinessDashboard() {
           month: monthName,
           totalCash: 0,
           totalPos: 0,
+          totalLotteryTicket: 0,
+          totalLotteryScratch: 0,
+          totalLotteryNumerical: 0,
           totalExpenses: 0,
+          totalPayments: 0,
           totalNet: 0,
           userBreakdown: []
         };
@@ -406,6 +539,9 @@ export default function BusinessDashboard() {
       const monthStat = monthlyData[monthKey];
       monthStat.totalCash += entry.cashIncome;
       monthStat.totalPos += entry.posIncome;
+      monthStat.totalLotteryTicket += entry.lotteryTicketIncome;
+      monthStat.totalLotteryScratch += entry.lotteryScratchIncome;
+      monthStat.totalLotteryNumerical += entry.lotteryNumericalIncome;
       
       // Update user breakdown for income
       const userName = entry.user.name || entry.user.username;
@@ -416,17 +552,24 @@ export default function BusinessDashboard() {
           name: userName,
           cashIncome: 0,
           posIncome: 0,
-          expenses: 0
+          lotteryTicketIncome: 0,
+          lotteryScratchIncome: 0,
+          lotteryNumericalIncome: 0,
+          expenses: 0,
+          payments: 0
         };
         monthStat.userBreakdown.push(userStat);
       }
       
       userStat.cashIncome += entry.cashIncome;
       userStat.posIncome += entry.posIncome;
+      userStat.lotteryTicketIncome += entry.lotteryTicketIncome;
+      userStat.lotteryScratchIncome += entry.lotteryScratchIncome;
+      userStat.lotteryNumericalIncome += entry.lotteryNumericalIncome;
     });
     
     // Process expense entries
-    expenses.forEach(expense => {
+    filteredExpenses.forEach(expense => {
       const date = new Date(expense.date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
@@ -436,14 +579,22 @@ export default function BusinessDashboard() {
           month: monthName,
           totalCash: 0,
           totalPos: 0,
+          totalLotteryTicket: 0,
+          totalLotteryScratch: 0,
+          totalLotteryNumerical: 0,
           totalExpenses: 0,
+          totalPayments: 0,
           totalNet: 0,
           userBreakdown: []
         };
       }
       
       const monthStat = monthlyData[monthKey];
-      monthStat.totalExpenses += expense.amount;
+      if (expense.type === 'expense') {
+        monthStat.totalExpenses += expense.amount;
+      } else {
+        monthStat.totalPayments += expense.amount;
+      }
       
       // Update user breakdown for expenses
       const userName = expense.user.name || expense.user.username;
@@ -454,17 +605,25 @@ export default function BusinessDashboard() {
           name: userName,
           cashIncome: 0,
           posIncome: 0,
-          expenses: 0
+          lotteryTicketIncome: 0,
+          lotteryScratchIncome: 0,
+          lotteryNumericalIncome: 0,
+          expenses: 0,
+          payments: 0
         };
         monthStat.userBreakdown.push(userStat);
       }
       
-      userStat.expenses += expense.amount;
+      if (expense.type === 'expense') {
+        userStat.expenses += expense.amount;
+      } else {
+        userStat.payments += expense.amount;
+      }
     });
     
     // Calculate net totals for each month
     Object.values(monthlyData).forEach(monthStat => {
-      monthStat.totalNet = monthStat.totalCash + monthStat.totalPos - monthStat.totalExpenses;
+      monthStat.totalNet = monthStat.totalCash + monthStat.totalPos + monthStat.totalLotteryTicket + monthStat.totalLotteryScratch + monthStat.totalLotteryNumerical - monthStat.totalExpenses - monthStat.totalPayments;
     });
     
     return Object.values(monthlyData).sort((a, b) => b.month.localeCompare(a.month));
@@ -495,49 +654,7 @@ export default function BusinessDashboard() {
   //   };
   // };
 
-  const getCurrentMonthStats = () => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    const currentMonthEntries = entries.filter(entry => {
-      const entryDate = new Date(entry.date);
-      return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
-    });
-    
-    const currentMonthExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
-    });
-    
-    console.log('Current month entries for stats:', currentMonthEntries);
-    console.log('Current month expenses for stats:', currentMonthExpenses);
-    
-    const incomeTotals = currentMonthEntries.reduce(
-      (acc, entry) => ({
-        cash: acc.cash + entry.cashIncome,
-        pos: acc.pos + entry.posIncome
-      }),
-      { cash: 0, pos: 0 }
-    );
-    
-    const expenseTotal = currentMonthExpenses.reduce(
-      (acc, expense) => acc + expense.amount,
-      0
-    );
-    
-    const totals = {
-      ...incomeTotals,
-      expenses: expenseTotal
-    };
-    
-    console.log('Calculated totals:', totals);
-    
-    return {
-      ...totals,
-      net: totals.cash + totals.pos - totals.expenses
-    };
-  };
+
 
   const getSelectedRangeStats = () => {
     const startDate = new Date(dateRange.startDate);
@@ -563,9 +680,12 @@ export default function BusinessDashboard() {
     const incomeTotals = selectedRangeEntries.reduce(
       (acc, entry) => ({
         cash: acc.cash + entry.cashIncome,
-        pos: acc.pos + entry.posIncome
+        pos: acc.pos + entry.posIncome,
+        lotteryTicket: acc.lotteryTicket + entry.lotteryTicketIncome,
+        lotteryScratch: acc.lotteryScratch + entry.lotteryScratchIncome,
+        lotteryNumerical: acc.lotteryNumerical + entry.lotteryNumericalIncome
       }),
-      { cash: 0, pos: 0 }
+      { cash: 0, pos: 0, lotteryTicket: 0, lotteryScratch: 0, lotteryNumerical: 0 }
     );
     
     const expenseTotal = selectedRangeExpenses.reduce(
@@ -582,14 +702,13 @@ export default function BusinessDashboard() {
     
     return {
       ...totals,
-      net: totals.cash + totals.pos - totals.expenses
+      net: totals.cash + totals.pos + totals.lotteryTicket + totals.lotteryScratch + totals.lotteryNumerical - totals.expenses
     };
   };
 
   // const stats = getTotalStats();
-  const currentMonthStats = getCurrentMonthStats();
   const selectedRangeStats = getSelectedRangeStats();
-  const monthlyStats = getMonthlyStats();
+  const monthlyStats = getMonthlyStats(selectedStoreId || undefined);
 
   if (loading) {
     return (
@@ -602,17 +721,18 @@ export default function BusinessDashboard() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-white">{t('dashboard.business_title')}</h1>
+        <h1 className="text-3xl font-bold text-white">İşletme Panosu</h1>
       </div>
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-700">
         <nav className="flex space-x-8 overflow-x-auto">
           {[
-            { key: 'overview', label: t('dashboard.tabs.overview') },
-            { key: 'employees', label: t('dashboard.tabs.employees') },
-            { key: 'income', label: t('dashboard.tabs.my_income') },
-            { key: 'reports', label: t('dashboard.tabs.reports') }
+            { key: 'overview', label: 'Genel Bakış' },
+            { key: 'income', label: 'Gelir-Gider Ekle' },
+            { key: 'reports', label: 'Raporlar' },
+            { key: 'employees', label: 'Çalışanlar' },
+            { key: 'stores', label: 'Mağazalar' }
           ].map(tab => (
             <button
               key={tab.key}
@@ -644,36 +764,55 @@ export default function BusinessDashboard() {
       {/* Overview Tab */}
       {activeTab === 'overview' && (
         <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">{t('overview.total_employees')}</h3>
+              <h3 className="text-sm font-medium text-gray-400">Toplam Çalışanlar</h3>
               <p className="text-3xl font-bold text-white mt-2">{employees.length}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">{t('overview.cash_income')}</h3>
-              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.cash)}</p>
+              <h3 className="text-sm font-medium text-gray-400">Toplam Mağazalar</h3>
+              <p className="text-3xl font-bold text-white mt-2">{stores.length}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">{t('overview.pos_income')}</h3>
-              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.pos)}</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">{t('overview.expenses')}</h3>
+              <h3 className="text-sm font-medium text-gray-400">Giderler</h3>
               <p className="text-3xl font-bold text-red-400 mt-2">{formatCurrency(selectedRangeStats.expenses)}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400">{t('overview.net_profit')}</h3>
+              <h3 className="text-sm font-medium text-gray-400">Net Kar</h3>
               <p className={`text-3xl font-bold mt-2 ${selectedRangeStats.net >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {formatCurrency(selectedRangeStats.net)}
               </p>
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-sm font-medium text-gray-400">Nakit Gelir</h3>
+              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.cash)}</p>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-sm font-medium text-gray-400">POS Gelir</h3>
+              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.pos)}</p>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-sm font-medium text-gray-400">Amorti (Bilet) Gelir</h3>
+              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.lotteryTicket || 0)}</p>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-sm font-medium text-gray-400">Amorti (Kazıkazan) Gelir</h3>
+              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.lotteryScratch || 0)}</p>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-sm font-medium text-gray-400">Amorti (Sayısal Loto) Gelir</h3>
+              <p className="text-3xl font-bold text-green-400 mt-2">{formatCurrency(selectedRangeStats.lotteryNumerical || 0)}</p>
+            </div>
+          </div>
+
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h3 className="text-lg font-semibold text-white mb-4">{t('reports.date_filter')}</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Tarih Filtresi</h3>
             <div className="flex flex-col sm:flex-row gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">{t('reports.start_date')}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Başlangıç Tarihi</label>
                 <input
                   type="date"
                   value={dateRange.startDate}
@@ -682,7 +821,7 @@ export default function BusinessDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">{t('reports.end_date')}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Bitiş Tarihi</label>
                 <input
                   type="date"
                   value={dateRange.endDate}
@@ -695,34 +834,153 @@ export default function BusinessDashboard() {
                   onClick={setThisMonthRange}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
                 >
-                  {t('reports.this_month')}
+                  Bu Ay
                 </button>
                 <button
                   onClick={setLastMonthRange}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
                 >
-                  {t('reports.last_month')}
+                  Geçen Ay
                 </button>
                 <button
                   onClick={setTodayRange}
                   className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
                 >
-                  {t('reports.today')}
+                  Bugün
                 </button>
                 <button
                   onClick={setYesterdayRange}
                   className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
                 >
-                  {t('reports.yesterday')}
+                  Dün
                 </button>
                 <button
                   onClick={fetchEntries}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
                 >
-                  {t('reports.apply_filter')}
+                  Filtreyi Uygula
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stores Tab */}
+      {activeTab === 'stores' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-white">Mağaza Yönetimi</h2>
+            <button
+              onClick={() => {
+                setShowStoreForm(true);
+                setEditingStore(null);
+                setStoreFormData({ name: '' });
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            >
+              Mağaza Ekle
+            </button>
+          </div>
+
+          {showStoreForm && (
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                {editingStore ? 'Mağaza Düzenle' : 'Mağaza Ekle'}
+              </h3>
+              
+              <form onSubmit={handleStoreSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Mağaza Adı</label>
+                  <input
+                    type="text"
+                    value={storeFormData.name}
+                    onChange={(e) => setStoreFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    placeholder="Mağaza adını girin"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {editingStore ? 'Güncelle' : 'Kaydet'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowStoreForm(false);
+                      setEditingStore(null);
+                      setStoreFormData({ name: '' });
+                    }}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    İptal
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <div className="bg-gray-800 rounded-lg border border-gray-700">
+            <div className="p-6 border-b border-gray-700">
+              <h3 className="text-lg font-semibold text-white">Mağazalar</h3>
+            </div>
+            
+            {stores.length === 0 ? (
+              <div className="p-6 text-center text-gray-400">
+                Henüz mağaza eklenmemiş
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Mağaza Adı
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Oluşturulma Tarihi
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        İşlemler
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {stores.map((store) => (
+                      <tr key={store._id} className="text-gray-300">
+                        <td className="px-6 py-4 whitespace-nowrap capitalize">
+                          {store.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {formatDateForDisplay(store.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleEditStore(store)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                            >
+                              Düzenle
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStore(store._id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -731,7 +989,7 @@ export default function BusinessDashboard() {
       {activeTab === 'employees' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-white">{t('employees.title')}</h2>
+            <h2 className="text-xl font-semibold text-white">Çalışan Yönetimi</h2>
             <button
               onClick={() => {
                 setShowEmployeeForm(true);
@@ -742,20 +1000,20 @@ export default function BusinessDashboard() {
               }}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
-                              {t('employees.add_button')}
+              Çalışan Ekle
             </button>
           </div>
 
           {showBusinessPasswordForm && (
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-lg font-semibold text-white mb-4">
-                {t('employees.change_password')}
+                {'Şifre Değiştir'}
               </h3>
               
               <form onSubmit={handleBusinessPasswordChange} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('login.current_password')}
+                    {'Mevcut Şifre'}
                   </label>
                   <div className="relative">
                     <input
@@ -764,7 +1022,7 @@ export default function BusinessDashboard() {
                       onChange={(e) => setBusinessPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
                       className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
-                      placeholder={t('login.placeholder_current_password')}
+                      placeholder="Mevcut şifrenizi girin"
                     />
                     <button
                       type="button"
@@ -787,7 +1045,7 @@ export default function BusinessDashboard() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('login.new_password')}
+                    {'Yeni Şifre'}
                   </label>
                   <div className="relative">
                     <input
@@ -796,7 +1054,7 @@ export default function BusinessDashboard() {
                       onChange={(e) => setBusinessPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                       className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
-                      placeholder={t('login.placeholder_new_password')}
+                      placeholder="Yeni şifrenizi girin"
                     />
                     <button
                       type="button"
@@ -819,7 +1077,7 @@ export default function BusinessDashboard() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('login.confirm_password')}
+                    {'Şifre Onayla'}
                   </label>
                   <div className="relative">
                     <input
@@ -828,7 +1086,7 @@ export default function BusinessDashboard() {
                       onChange={(e) => setBusinessPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
-                      placeholder={t('login.placeholder_confirm_password')}
+                      placeholder="Şifrenizi tekrar girin"
                     />
                     <button
                       type="button"
@@ -854,7 +1112,7 @@ export default function BusinessDashboard() {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {t('employees.change_password')}
+                    {'Şifre Değiştir'}
                   </button>
                   <button
                     type="button"
@@ -867,7 +1125,7 @@ export default function BusinessDashboard() {
                     }}
                     className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {t('employees.cancel')}
+                    {'İptal'}
                   </button>
                 </div>
               </form>
@@ -877,12 +1135,12 @@ export default function BusinessDashboard() {
           {showEmployeeForm && (
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-lg font-semibold text-white mb-4">
-                {editingEmployee ? t('employees.edit_employee') : t('employees.add_employee')}
+                {editingEmployee ? 'Çalışan Düzenle' : 'Çalışan Ekle'}
               </h3>
               
               <form onSubmit={handleEmployeeSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">{t('employees.name')}</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">{'Çalışan Adı'}</label>
                   <input
                     type="text"
                     value={employeeFormData.name}
@@ -892,7 +1150,7 @@ export default function BusinessDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">{t('employees.username')}</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">{'Kullanıcı Adı'}</label>
                   <input
                     type="text"
                     value={employeeFormData.username}
@@ -901,9 +1159,10 @@ export default function BusinessDashboard() {
                     required
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('employees.password')}
+                    {'Şifre'}
                   </label>
                   <div className="relative">
                     <input
@@ -912,7 +1171,7 @@ export default function BusinessDashboard() {
                       onChange={(e) => setEmployeeFormData(prev => ({ ...prev, password: e.target.value }))}
                       className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required={!editingEmployee}
-                      placeholder={editingEmployee ? t('employees.empty_password') : t('employees.enter_password')}
+                      placeholder={editingEmployee ? 'Şifre değiştirmek için boş bırakın' : 'Şifrenizi girin'}
                     />
                     <button
                       type="button"
@@ -936,7 +1195,7 @@ export default function BusinessDashboard() {
                 {(!editingEmployee || employeeFormData.password) && (
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      {t('login.confirm_password')}
+                      {'Şifre Onayla'}
                     </label>
                     <div className="relative">
                       <input
@@ -945,7 +1204,7 @@ export default function BusinessDashboard() {
                         onChange={(e) => setEmployeeFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                         className="w-full px-3 py-2 pr-12 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required={!editingEmployee || !!employeeFormData.password}
-                        placeholder={t('login.placeholder_confirm_password')}
+                        placeholder="Şifrenizi tekrar girin"
                       />
                       <button
                         type="button"
@@ -971,7 +1230,7 @@ export default function BusinessDashboard() {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {editingEmployee ? t('employees.update') : t('employees.add_title')}
+                    {editingEmployee ? 'Güncelle' : 'Ekle'}
                   </button>
                   <button
                     type="button"
@@ -982,7 +1241,7 @@ export default function BusinessDashboard() {
                     }}
                     className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {t('employees.cancel')}
+                    {'İptal'}
                   </button>
                 </div>
               </form>
@@ -991,12 +1250,12 @@ export default function BusinessDashboard() {
 
           <div className="bg-gray-800 rounded-lg border border-gray-700">
             <div className="p-6 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white">{t('employees.employees')}</h3>
+              <h3 className="text-lg font-semibold text-white">{'Çalışanlar'}</h3>
             </div>
             
             {employees.length === 0 ? (
               <div className="p-6 text-center text-gray-400">
-                {t('employees.no_employee')}
+                {'Henüz çalışan eklenmemiş'}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -1004,16 +1263,16 @@ export default function BusinessDashboard() {
                   <thead className="bg-gray-700">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        {t('employees.name')}
+                        Çalışan Adı
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        {t('employees.username')}
+                        Kullanıcı Adı
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        {t('employees.created_date')}
+                        Oluşturulma Tarihi
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        {t('employees.actions')}
+                        {'İşlemler'}
                       </th>
                     </tr>
                   </thead>
@@ -1038,13 +1297,13 @@ export default function BusinessDashboard() {
                               onClick={() => handleEditEmployee(employee)}
                               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
                             >
-                              {t('employees.edit')}
+                              {'Düzenle'}
                             </button>
                             <button
                               onClick={() => handleDeleteEmployee(employee._id)}
                               className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
                             >
-                              {t('employees.delete')}
+                              {'Sil'}
                             </button>
                           </div>
                         </td>
@@ -1056,7 +1315,7 @@ export default function BusinessDashboard() {
                         <div className="flex items-center">
                           <span>{user?.name}</span>
                           <span className="ml-2 px-2 py-1 text-xs bg-blue-600 text-white rounded">
-                            {t('employees.business_owner')}
+                            {'İşletme Sahibi'}
                           </span>
                         </div>
                       </td>
@@ -1077,7 +1336,7 @@ export default function BusinessDashboard() {
                           }}
                           className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm transition-colors"
                         >
-                          {t('employees.change_password')}
+                          {'Şifre Değiştir'}
                         </button>
                       </td>
                     </tr>
@@ -1097,36 +1356,76 @@ export default function BusinessDashboard() {
       {/* Reports Tab */}
       {activeTab === 'reports' && (
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-white">{t('reports.description')}</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-white">{'Raporlar'}</h2>
+          </div>
+
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 className="text-lg font-semibold text-white mb-4">{'Mağaza Filtresi'}</h3>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{'Mağaza Seçin'}</label>
+                <select
+                  value={selectedStoreId}
+                  onChange={(e) => setSelectedStoreId(e.target.value)}
+                  className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 capitalize"
+                >
+                  <option value="">{'Tüm Mağazalar'}</option>
+                  {stores.map((store) => (
+                    <option key={store._id} value={store._id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
 
           {monthlyStats.length === 0 ? (
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 text-center text-gray-400">
-              {t('reports.no_data')}
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 text-center text-gray-400 capitalize">
+              {selectedStoreId ? stores.find(store => store._id === selectedStoreId)?.name + ' şubesine ait veri bulunamadı' : 'Tüm mağazaların verileri bulunamadı'}
             </div>
           ) : (
             <div className="space-y-8">
               {monthlyStats.map((monthStat, index) => (
                 <div key={index} className="bg-gray-800 rounded-lg border border-gray-700">
                   <div className="p-6 border-b border-gray-700">
-                    <h3 className="text-lg font-semibold text-white">{formatDateForDisplay(dateRange.startDate)} - {formatDateForDisplay(dateRange.endDate)}</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <div className="flex flex-col justify-center items-center pb-8">
+                      <h3 className="text-lg font-semibold text-white">{formatDateForDisplay(dateRange.startDate)} - {formatDateForDisplay(dateRange.endDate)}</h3>
+                      <h4 className="text-lg text-gray-200 capitalize">Seçili mağaza: {selectedStoreId ? stores.find(store => store._id === selectedStoreId)?.name || 'Bilinmeyen Mağaza' : 'Tüm Mağazalar'}</h4>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4 mb-4">
                       <div>
-                        <p className="text-sm text-gray-400">{t('reports.cash_income')}</p>
+                        <p className="text-sm text-gray-400">{'Nakit Gelir'}</p>
                         <p className="text-xl font-bold text-green-400">{formatCurrency(monthStat.totalCash)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">{t('reports.pos_income')}</p>
+                        <p className="text-sm text-gray-400">{'POS Gelir'}</p>
                         <p className="text-xl font-bold text-green-400">{formatCurrency(monthStat.totalPos)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">{t('reports.expenses')}</p>
+                        <p className="text-sm text-gray-400">{'Giderler'}</p>
                         <p className="text-xl font-bold text-red-400">{formatCurrency(monthStat.totalExpenses)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">{t('reports.net_profit')}</p>
+                        <p className="text-sm text-gray-400">{'Net Kar'}</p>
                         <p className={`text-xl font-bold ${monthStat.totalNet >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(monthStat.totalNet)}
                         </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                      <div>
+                        <p className="text-sm text-gray-400">{'Amorti (Bilet) Gelir'}</p>
+                        <p className="text-xl font-bold text-green-400">{formatCurrency(monthStat.totalLotteryTicket)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400">{'Amorti (Kazıkazan) Gelir'}</p>
+                        <p className="text-xl font-bold text-green-400">{formatCurrency(monthStat.totalLotteryScratch)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400">{'Amorti (Sayısal Loto) Gelir'}</p>
+                        <p className="text-xl font-bold text-green-400">{formatCurrency(monthStat.totalLotteryNumerical)}</p>
                       </div>
                     </div>
                   </div>
@@ -1134,28 +1433,39 @@ export default function BusinessDashboard() {
                   <div className="p-6 space-y-8">
                     {/* User Income Breakdown */}
                     <div>
-                      <h4 className="text-md font-semibold text-white mb-4">{t('reports.user_breakdown_income')}</h4>
+                      <h4 className="text-md font-semibold text-white mb-4">{'Kullanıcı Gelir Dağılımı'}</h4>
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead className="bg-gray-700">
                             <tr>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                {t('reports.user')}
+                                {'Kullanıcı'}
                               </th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                {t('reports.cash_income')}
+                                {'Nakit Gelir'}
                               </th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                {t('reports.pos_income')}
+                                {'POS Gelir'}
                               </th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                {t('reports.total_header')} {t('income.total')}
+                                {'Amorti (Bilet) Gelir'}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {'Amorti (Kazıkazan) Gelir'}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {'Amorti (Sayısal Loto) Gelir'}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {'Toplam'} {'Gelir'}
                               </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-700">
-                            {monthStat.userBreakdown.filter(user => user.cashIncome > 0 || user.posIncome > 0).map((userStat) => {
-                              const totalIncome = userStat.cashIncome + userStat.posIncome;
+                            {monthStat.userBreakdown.filter(user => 
+                              user.cashIncome > 0 || user.posIncome > 0 || user.lotteryTicketIncome > 0 || user.lotteryScratchIncome > 0 || user.lotteryNumericalIncome > 0
+                            ).map((userStat) => {
+                              const totalIncome = userStat.cashIncome + userStat.posIncome + userStat.lotteryTicketIncome + userStat.lotteryScratchIncome + userStat.lotteryNumericalIncome;
                               return (
                                 <tr key={`income-${userStat.userId}`} className="text-gray-300">
                                   <td className="px-4 py-2 whitespace-nowrap">{userStat.name}</td>
@@ -1164,6 +1474,15 @@ export default function BusinessDashboard() {
                                   </td>
                                   <td className="px-4 py-2 whitespace-nowrap text-green-400">
                                     {formatCurrency(userStat.posIncome)}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-green-400">
+                                    {formatCurrency(userStat.lotteryTicketIncome)}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-green-400">
+                                    {formatCurrency(userStat.lotteryScratchIncome)}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap text-green-400">
+                                    {formatCurrency(userStat.lotteryNumericalIncome)}
                                   </td>
                                   <td className="px-4 py-2 whitespace-nowrap text-green-400 font-medium">
                                     {formatCurrency(totalIncome)}
@@ -1178,22 +1497,28 @@ export default function BusinessDashboard() {
 
                     {/* User Expense Breakdown */}
                     <div>
-                      <h4 className="text-md font-semibold text-white mb-4">{t('reports.user_breakdown_expenses')}</h4>
+                      <h4 className="text-md font-semibold text-white mb-4">{'Kullanıcı Gider Dağılımı'}</h4>
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead className="bg-gray-700">
                             <tr>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                {t('reports.user')}
+                                {'Kullanıcı'}
                               </th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                {t('expense.description')}
+                                {'Mağaza'}
                               </th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                {t('expense.amount')} (₺)
+                                {'Tür'}
                               </th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                {t('expense.date')}
+                                {'Açıklama'}
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {'Tutar'} (₺)
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                {'Tarih'}
                               </th>
                             </tr>
                           </thead>
@@ -1208,10 +1533,20 @@ export default function BusinessDashboard() {
                               const endDate = new Date(dateRange.endDate);
                               endDate.setHours(23, 59, 59, 999);
                               
-                              return expenseDate >= startDate && expenseDate <= endDate;
+                              // Filter by date range
+                              const dateMatch = expenseDate >= startDate && expenseDate <= endDate;
+                              
+                              // Filter by store if a store is selected
+                              const storeMatch = !selectedStoreId || expense.store?._id === selectedStoreId;
+                              
+                              return dateMatch && storeMatch;
                             }).map((expense) => (
                               <tr key={expense._id} className="text-gray-300">
                                 <td className="px-4 py-2 whitespace-nowrap">{expense.user.name || expense.user.username}</td>
+                                <td className="px-4 py-2 whitespace-nowrap capitalize">{expense.store?.name || 'N/A'}</td>
+                                <td className="px-4 py-2 whitespace-nowrap capitalize">
+                                  {expense.type === 'expense' ? 'Harcama' : 'Ödeme'}
+                                </td>
                                 <td className="px-4 py-2 capitalize">{expense.description}</td>
                                 <td className="px-4 py-2 whitespace-nowrap text-red-400">
                                   {formatCurrency(expense.amount)}

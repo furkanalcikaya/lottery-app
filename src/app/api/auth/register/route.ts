@@ -9,14 +9,14 @@ export async function POST(request: NextRequest) {
 
     if (!name || !companyName || !username || !password) {
       return NextResponse.json(
-        { error: 'Name, company name, username and password are required' },
+        { error: 'Ad, şirket adı, kullanıcı adı ve şifre gereklidir' },
         { status: 400 }
       );
     }
 
     if (password.length < 6) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
+        { error: 'Şifre en az 6 karakter olmalıdır' },
         { status: 400 }
       );
     }
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const existingBusiness = await Business.findOne({ username });
     if (existingBusiness) {
       return NextResponse.json(
-        { error: 'Username already exists' },
+        { error: 'Kullanıcı adı zaten mevcut' },
         { status: 409 }
       );
     }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     
     if (error && typeof error === 'object' && 'code' in error && (error as any).code === 11000) {
       return NextResponse.json(
-        { error: 'Username already exists' },
+        { error: 'Kullanıcı adı zaten mevcut' },
         { status: 409 }
       );
     }

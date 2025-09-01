@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { useAuth } from '@/contexts/AuthContext';
 
 interface IncomeEntry {
@@ -9,6 +9,13 @@ interface IncomeEntry {
   date: string;
   cashIncome: number;
   posIncome: number;
+  lotteryTicketIncome: number;
+  lotteryScratchIncome: number;
+  lotteryNumericalIncome: number;
+  store: {
+    _id: string;
+    name: string;
+  };
   createdAt: string;
   user?: {
     _id: string;
@@ -17,11 +24,21 @@ interface IncomeEntry {
   } | string;
 }
 
+interface Store {
+  _id: string;
+  name: string;
+}
+
 interface ExpenseEntry {
   _id: string;
   date: string;
+  type: 'expense' | 'payment';
   description: string;
   amount: number;
+  store: {
+    _id: string;
+    name: string;
+  };
   createdAt: string;
   user?: {
     _id: string;
@@ -31,7 +48,7 @@ interface ExpenseEntry {
 }
 
 export default function EmployeeDashboard() {
-  const { t } = useTranslation();
+
   const { user } = useAuth();
   
   const formatDateForInput = (date: Date) => {
@@ -43,13 +60,18 @@ export default function EmployeeDashboard() {
 
   // Income states
   const [entries, setEntries] = useState<IncomeEntry[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
   const [loadingIncome, setLoadingIncome] = useState(true);
   const [showIncomeForm, setShowIncomeForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<IncomeEntry | null>(null);
   const [incomeFormData, setIncomeFormData] = useState({
     date: formatDateForInput(new Date()),
+    store: '',
     cashIncome: '',
-    posIncome: ''
+    posIncome: '',
+    lotteryTicketIncome: '',
+    lotteryScratchIncome: '',
+    lotteryNumericalIncome: ''
   });
 
   // Expense states
@@ -59,6 +81,8 @@ export default function EmployeeDashboard() {
   const [editingExpense, setEditingExpense] = useState<ExpenseEntry | null>(null);
   const [expenseFormData, setExpenseFormData] = useState({
     date: formatDateForInput(new Date()),
+    store: '',
+    type: 'expense' as 'expense' | 'payment',
     description: '',
     amount: ''
   });
@@ -66,9 +90,22 @@ export default function EmployeeDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    fetchStores();
     fetchEntries();
     fetchExpenses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchStores = useCallback(async () => {
+    try {
+      const response = await fetch('/api/stores');
+      if (response.ok) {
+        const data = await response.json();
+        setStores(data.stores);
+      }
+    } catch (error) {
+      console.error('Failed to fetch stores:', error);
+    }
   }, []);
 
   const fetchEntries = useCallback(async () => {
@@ -110,6 +147,11 @@ export default function EmployeeDashboard() {
     e.preventDefault();
     setError('');
 
+    if (!incomeFormData.store) {
+      setError('Please select a store');
+      return;
+    }
+
     try {
       const url = editingEntry ? `/api/income/${editingEntry._id}` : '/api/income';
       const method = editingEntry ? 'PUT' : 'POST';
@@ -121,8 +163,12 @@ export default function EmployeeDashboard() {
         },
         body: JSON.stringify({
           date: incomeFormData.date,
+          store: incomeFormData.store,
           cashIncome: parseInt(incomeFormData.cashIncome) || 0,
-          posIncome: parseInt(incomeFormData.posIncome) || 0
+          posIncome: parseInt(incomeFormData.posIncome) || 0,
+          lotteryTicketIncome: parseInt(incomeFormData.lotteryTicketIncome) || 0,
+          lotteryScratchIncome: parseInt(incomeFormData.lotteryScratchIncome) || 0,
+          lotteryNumericalIncome: parseInt(incomeFormData.lotteryNumericalIncome) || 0
         }),
       });
 
@@ -132,8 +178,12 @@ export default function EmployeeDashboard() {
         setEditingEntry(null);
         setIncomeFormData({
           date: formatDateForInput(new Date()),
+          store: '',
           cashIncome: '',
-          posIncome: ''
+          posIncome: '',
+          lotteryTicketIncome: '',
+          lotteryScratchIncome: '',
+          lotteryNumericalIncome: ''
         });
       } else {
         const errorData = await response.json();
@@ -153,6 +203,16 @@ export default function EmployeeDashboard() {
       return;
     }
 
+    if (!expenseFormData.store) {
+      setError('Please select a store');
+      return;
+    }
+
+    if (!expenseFormData.type) {
+      setError('Please select expense type');
+      return;
+    }
+
     try {
       const url = editingExpense ? `/api/expenses/${editingExpense._id}` : '/api/expenses';
       const method = editingExpense ? 'PUT' : 'POST';
@@ -164,6 +224,8 @@ export default function EmployeeDashboard() {
         },
         body: JSON.stringify({
           date: expenseFormData.date,
+          store: expenseFormData.store,
+          type: expenseFormData.type,
           description: expenseFormData.description,
           amount: parseInt(expenseFormData.amount) || 0
         }),
@@ -175,6 +237,8 @@ export default function EmployeeDashboard() {
         setEditingExpense(null);
         setExpenseFormData({
           date: formatDateForInput(new Date()),
+          store: '',
+          type: 'expense' as 'expense' | 'payment',
           description: '',
           amount: ''
         });
@@ -191,8 +255,12 @@ export default function EmployeeDashboard() {
     setEditingEntry(entry);
     setIncomeFormData({
       date: new Date(entry.date).toISOString().split('T')[0],
+      store: entry.store._id,
       cashIncome: entry.cashIncome.toString(),
-      posIncome: entry.posIncome.toString()
+      posIncome: entry.posIncome.toString(),
+      lotteryTicketIncome: entry.lotteryTicketIncome.toString(),
+      lotteryScratchIncome: entry.lotteryScratchIncome.toString(),
+      lotteryNumericalIncome: entry.lotteryNumericalIncome.toString()
     });
     setShowIncomeForm(true);
   };
@@ -201,6 +269,8 @@ export default function EmployeeDashboard() {
     setEditingExpense(expense);
     setExpenseFormData({
       date: new Date(expense.date).toISOString().split('T')[0],
+      store: expense.store._id,
+      type: expense.type,
       description: expense.description,
       amount: expense.amount.toString()
     });
@@ -208,7 +278,7 @@ export default function EmployeeDashboard() {
   };
 
   const handleIncomeDelete = async (id: string) => {
-    if (confirm(t('confirmDelete'))) {
+    if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
       try {
         const response = await fetch(`/api/income/${id}`, {
           method: 'DELETE',
@@ -224,7 +294,7 @@ export default function EmployeeDashboard() {
   };
 
   const handleExpenseDelete = async (id: string) => {
-    if (confirm(t('confirmDelete'))) {
+    if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
       try {
         const response = await fetch(`/api/expenses/${id}`, {
           method: 'DELETE',
@@ -240,7 +310,7 @@ export default function EmployeeDashboard() {
   };
 
   const handleIncomeInputChange = (field: string, value: string) => {
-    if (field === 'cashIncome' || field === 'posIncome') {
+    if (field === 'cashIncome' || field === 'posIncome' || field === 'lotteryTicketIncome' || field === 'lotteryScratchIncome' || field === 'lotteryNumericalIncome') {
       // Only allow whole numbers
       if (value === '' || /^\d+$/.test(value)) {
         setIncomeFormData(prev => ({ ...prev, [field]: value }));
@@ -285,7 +355,7 @@ export default function EmployeeDashboard() {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <div className="text-white mt-4">{t('common.loading')}</div>
+        <div className="text-white mt-4">{'Yükleniyor...'}</div>
       </div>
     );
   }
@@ -297,12 +367,12 @@ export default function EmployeeDashboard() {
         {/* Income Management Section */}
         <div className="bg-gray-800 rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white">{t('income.management')}</h2>
+            <h2 className="text-2xl font-bold text-white">{'Gelir Yönetimi'}</h2>
             <button
               onClick={() => setShowIncomeForm(true)}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
-              {t('income.add_button')}
+              {'Gelir Ekle'}
             </button>
           </div>
 
@@ -310,7 +380,7 @@ export default function EmployeeDashboard() {
           {showIncomeForm && (
             <div className="bg-gray-700 rounded-lg p-6 mb-6">
               <h3 className="text-xl font-semibold text-white mb-4">
-                {editingEntry ? t('income.edit_entry') : t('income.add_entry')}
+                {editingEntry ? 'Gelir Düzenle' : 'Gelir Ekle'}
               </h3>
               
               {error && (
@@ -321,7 +391,7 @@ export default function EmployeeDashboard() {
 
               <form onSubmit={handleIncomeSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-gray-300 mb-2">{t('date')}</label>
+                  <label className="block text-gray-300 mb-2">{'Tarih'}</label>
                   <input
                     type="date"
                     value={incomeFormData.date}
@@ -331,9 +401,26 @@ export default function EmployeeDashboard() {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-gray-300 mb-2">{'Mağaza'}</label>
+                  <select
+                    value={incomeFormData.store}
+                    onChange={(e) => handleIncomeInputChange('store', e.target.value)}
+                    className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:border-blue-500 focus:outline-none capitalize"
+                    required
+                  >
+                    <option value="">{'Mağaza Seçin'}</option>
+                    {stores.map((store) => (
+                      <option key={store._id} value={store._id}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-300 mb-2">{t('income.cash')} (₺)</label>
+                    <label className="block text-gray-300 mb-2">{'Nakit Gelir'} (₺)</label>
                     <input
                       type="number"
                       step="1"
@@ -347,13 +434,55 @@ export default function EmployeeDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2">{t('income.pos')} (₺)</label>
+                    <label className="block text-gray-300 mb-2">{'POS Gelir'} (₺)</label>
                     <input
                       type="number"
                       step="1"
                       min="0"
                       value={incomeFormData.posIncome}
                       onChange={(e) => handleIncomeInputChange('posIncome', e.target.value)}
+                      onKeyDown={handleIncomeKeyDown}
+                      className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:border-blue-500 focus:outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 mb-2">{'Amorti (Bilet) Gelir'} (₺)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={incomeFormData.lotteryTicketIncome}
+                      onChange={(e) => handleIncomeInputChange('lotteryTicketIncome', e.target.value)}
+                      onKeyDown={handleIncomeKeyDown}
+                      className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:border-blue-500 focus:outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 mb-2">{'Amorti (Kazıkazan) Gelir'} (₺)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={incomeFormData.lotteryScratchIncome}
+                      onChange={(e) => handleIncomeInputChange('lotteryScratchIncome', e.target.value)}
+                      onKeyDown={handleIncomeKeyDown}
+                      className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:border-blue-500 focus:outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 mb-2">{'Amorti (Sayısal Loto) Gelir'} (₺)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={incomeFormData.lotteryNumericalIncome}
+                      onChange={(e) => handleIncomeInputChange('lotteryNumericalIncome', e.target.value)}
                       onKeyDown={handleIncomeKeyDown}
                       className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:border-blue-500 focus:outline-none"
                       placeholder="0"
@@ -366,7 +495,7 @@ export default function EmployeeDashboard() {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {editingEntry ? t('income.update_entry') : t('income.add_button')}
+                    {editingEntry ? 'Gelir Güncelle' : 'Gelir Ekle'}
                   </button>
                   <button
                     type="button"
@@ -375,13 +504,17 @@ export default function EmployeeDashboard() {
                       setEditingEntry(null);
                       setIncomeFormData({
                         date: formatDateForInput(new Date()),
+                        store: '',
                         cashIncome: '',
-                        posIncome: ''
+                        posIncome: '',
+                        lotteryTicketIncome: '',
+                        lotteryScratchIncome: '',
+                        lotteryNumericalIncome: ''
                       });
                     }}
                     className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {t('income.cancel')}
+                    {'İptal'}
                   </button>
                 </div>
               </form>
@@ -394,47 +527,58 @@ export default function EmployeeDashboard() {
               <table className="w-full">
                 <thead className="bg-gray-600">
                   <tr>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('income.date')}</th>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('income.cash')}</th>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('income.pos')}</th>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('income.total')}</th>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('income.actions')}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Tarih'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Mağaza'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Nakit Gelir'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'POS Gelir'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Amorti (Bilet) Gelir'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Amorti (Kazıkazan) Gelir'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Amorti (Sayısal Loto) Gelir'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Toplam'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'İşlemler'}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {entries.length === 0 ? (
                     <tr>
-                                             <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                         {t('income.no_entries')}
+                      <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
+                        {'Henüz gelir kaydı yok'}
                       </td>
                     </tr>
                   ) : (
-                    entries.map((entry) => (
-                      <tr key={entry._id} className="border-t border-gray-600">
-                        <td className="px-4 py-3 text-gray-300">{formatDate(entry.date)}</td>
-                        <td className="px-4 py-3 text-gray-300">{formatCurrency(entry.cashIncome)}</td>
-                        <td className="px-4 py-3 text-gray-300">{formatCurrency(entry.posIncome)}</td>
-                        <td className="px-4 py-3 text-gray-300 font-medium">
-                          {formatCurrency(entry.cashIncome + entry.posIncome)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleIncomeEdit(entry)}
-                              className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                            >
-                              {t('income.edit')}
-                            </button>
-                            <button
-                              onClick={() => handleIncomeDelete(entry._id)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                            >
-                              {t('income.delete')}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    entries.map((entry) => {
+                      const total = entry.cashIncome + entry.posIncome + entry.lotteryTicketIncome + entry.lotteryScratchIncome + entry.lotteryNumericalIncome;
+                      return (
+                        <tr key={entry._id} className="border-t border-gray-600">
+                          <td className="px-4 py-3 text-gray-300">{formatDate(entry.date)}</td>
+                          <td className="px-4 py-3 text-gray-300 capitalize">{entry.store?.name || 'N/A'}</td>
+                          <td className="px-4 py-3 text-gray-300">{formatCurrency(entry.cashIncome)}</td>
+                          <td className="px-4 py-3 text-gray-300">{formatCurrency(entry.posIncome)}</td>
+                          <td className="px-4 py-3 text-gray-300">{formatCurrency(entry.lotteryTicketIncome)}</td>
+                          <td className="px-4 py-3 text-gray-300">{formatCurrency(entry.lotteryScratchIncome)}</td>
+                          <td className="px-4 py-3 text-gray-300">{formatCurrency(entry.lotteryNumericalIncome)}</td>
+                          <td className="px-4 py-3 text-gray-300 font-medium">
+                            {formatCurrency(total)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleIncomeEdit(entry)}
+                                className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                              >
+                                {'Düzenle'}
+                              </button>
+                              <button
+                                onClick={() => handleIncomeDelete(entry._id)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                              >
+                                {'Sil'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -442,15 +586,16 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
-        {/* Expense Management Section */}
+        {/* Expense Management Section - Only visible for business users */}
+        {user?.role === 'business' && (
         <div className="bg-gray-800 rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white">{t('expense.management')}</h2>
+            <h2 className="text-2xl font-bold text-white">{'Gider Yönetimi'}</h2>
             <button
               onClick={() => setShowExpenseForm(true)}
               className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
-              {t('expense.add_button')}
+              {'Gider Ekle'}
             </button>
           </div>
 
@@ -458,7 +603,7 @@ export default function EmployeeDashboard() {
           {showExpenseForm && (
             <div className="bg-gray-700 rounded-lg p-6 mb-6">
               <h3 className="text-xl font-semibold text-white mb-4">
-                {editingExpense ? t('expense.edit_button') : t('expense.add_button')}
+                {editingExpense ? 'Gider Düzenle' : 'Gider Ekle'}
               </h3>
               
               {error && (
@@ -469,7 +614,7 @@ export default function EmployeeDashboard() {
 
               <form onSubmit={handleExpenseSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-gray-300 mb-2">{t('expense.date')}</label>
+                  <label className="block text-gray-300 mb-2">{'Tarih'}</label>
                   <input
                     type="date"
                     value={expenseFormData.date}
@@ -480,19 +625,50 @@ export default function EmployeeDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 mb-2">{t('expense.description')}</label>
+                  <label className="block text-gray-300 mb-2">{'Mağaza'}</label>
+                  <select
+                    value={expenseFormData.store}
+                    onChange={(e) => handleExpenseInputChange('store', e.target.value)}
+                    className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:border-blue-500 focus:outline-none capitalize"
+                    required
+                  >
+                    <option value="">{'Mağaza seçin'}</option>
+                    {stores.map((store) => (
+                      <option key={store._id} value={store._id}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 mb-2">{'Tür'}</label>
+                  <select
+                    value={expenseFormData.type}
+                    onChange={(e) => handleExpenseInputChange('type', e.target.value)}
+                    className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:border-blue-500 focus:outline-none"
+                    required
+                  >
+                    <option value="">{'Tür seçin'}</option>
+                    <option value="expense">{'Harcama'}</option>
+                    <option value="payment">{'Ödeme'}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 mb-2">{'Açıklama'}</label>
                   <input
                     type="text"
                     value={expenseFormData.description}
                     onChange={(e) => handleExpenseInputChange('description', e.target.value)}
                     className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:border-blue-500 focus:outline-none"
-                    placeholder={t('expense.description_placeholder')}
+                    placeholder="Gider açıklaması"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 mb-2">{t('expense.amount')} (₺)</label>
+                  <label className="block text-gray-300 mb-2">{'Tutar'} (₺)</label>
                   <input
                     type="number"
                     step="1"
@@ -511,7 +687,7 @@ export default function EmployeeDashboard() {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {editingExpense ? t('expense.update') : t('expense.add_button')}
+                    {editingExpense ? 'Güncelle' : 'Gider Ekle'}
                   </button>
                   <button
                     type="button"
@@ -520,13 +696,15 @@ export default function EmployeeDashboard() {
                       setEditingExpense(null);
                       setExpenseFormData({
                         date: formatDateForInput(new Date()),
+                        store: '',
+                        type: 'expense' as 'expense' | 'payment',
                         description: '',
                         amount: ''
                       });
                     }}
                     className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
-                    {t('expense.cancel')}
+                    {'İptal'}
                   </button>
                 </div>
               </form>
@@ -539,23 +717,29 @@ export default function EmployeeDashboard() {
               <table className="w-full">
                 <thead className="bg-gray-600">
                   <tr>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('expense.date')}</th>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('expense.description')}</th>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('expense.amount')}</th>
-                    <th className="px-4 py-3 text-left text-white font-medium">{t('expense.actions')}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Tarih'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Mağaza'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Tür'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Açıklama'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">{'Tutar'}</th>
+                    <th className="px-4 py-3 text-left text-white font-medium">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody>
                   {expenses.length === 0 ? (
                     <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
-                    {t('expense.no_expenses')}
-                    </td>
+                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                        Henüz gider kaydı yok
+                      </td>
                     </tr>
                   ) : (
                     expenses.map((expense) => (
                       <tr key={expense._id} className="border-t border-gray-600">
                         <td className="px-4 py-3 text-gray-300">{formatDate(expense.date)}</td>
+                        <td className="px-4 py-3 text-gray-300 capitalize">{expense.store?.name || 'N/A'}</td>
+                        <td className="px-4 py-3 text-gray-300 capitalize">
+                          {expense.type === 'expense' ? 'Harcama' : 'Ödeme'}
+                        </td>
                         <td className="px-4 py-3 text-gray-300 capitalize">{expense.description}</td>
                         <td className="px-4 py-3 text-gray-300">{formatCurrency(expense.amount)}</td>
                         <td className="px-4 py-3">
@@ -564,13 +748,13 @@ export default function EmployeeDashboard() {
                               onClick={() => handleExpenseEdit(expense)}
                               className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors"
                             >
-                              {t('expense.edit')}
+                              {'Düzenle'}
                             </button>
                             <button
                               onClick={() => handleExpenseDelete(expense._id)}
                               className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
                             >
-                              {t('expense.delete')}
+                              {'Sil'}
                             </button>
                           </div>
                         </td>
@@ -582,6 +766,7 @@ export default function EmployeeDashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

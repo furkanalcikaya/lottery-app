@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { I18nProvider } from "@/contexts/I18nProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Income Management",
-  description: "Business and employee income tracking system",
+  title: "Loto Bayi Yönetim Sistemi",
+  description: "Loto bayi gelir ve gider takip sistemi",
 };
 
 export default function RootLayout({
@@ -25,15 +24,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="tr">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-gray-100 min-h-screen`}
-      >
-        <I18nProvider>
-          <AuthProvider>
-        {children}
-          </AuthProvider>
-        </I18nProvider>
+      > 
+        <AuthProvider>
+      {children}
+        </AuthProvider>
       </body>
     </html>
   );

@@ -17,14 +17,14 @@ export async function PUT(request: NextRequest) {
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
-        { error: 'Current password and new password are required' },
+        { error: 'Mevcut şifre ve yeni şifre gereklidir' },
         { status: 400 }
       );
     }
 
     if (newPassword.length < 6) {
       return NextResponse.json(
-        { error: 'New password must be at least 6 characters long' },
+        { error: 'Yeni şifre en az 6 karakter olmalıdır' },
         { status: 400 }
       );
     }
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
     const business = await Business.findById(user.businessId);
     if (!business) {
       return NextResponse.json(
-        { error: 'Business not found' },
+        { error: 'Şirket bulunamadı' },
         { status: 404 }
       );
     }
@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest) {
     const isCurrentPasswordValid = await business.comparePassword(currentPassword);
     if (!isCurrentPasswordValid) {
       return NextResponse.json(
-        { error: 'Current password is incorrect' },
+        { error: 'Mevcut şifre hatalı' },
         { status: 400 }
       );
     }
@@ -54,7 +54,7 @@ export async function PUT(request: NextRequest) {
     await business.save();
 
     return NextResponse.json(
-      { message: 'Password changed successfully' },
+      { message: 'Şifre başarıyla değiştirildi' },
       { status: 200 }
     );
   } catch (error) {

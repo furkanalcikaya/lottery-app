@@ -21,7 +21,7 @@ export async function PUT(
 
     if (!name || !username) {
       return NextResponse.json(
-        { error: 'Name and username are required' },
+        { error: 'Ad ve kullanıcı adı gereklidir' },
         { status: 400 }
       );
     }
@@ -32,7 +32,7 @@ export async function PUT(
     const employee = await Employee.findById(id);
     if (!employee) {
       return NextResponse.json(
-        { error: 'Employee not found' },
+        { error: 'Çalışan bulunamadı' },
         { status: 404 }
       );
     }
@@ -54,7 +54,7 @@ export async function PUT(
     
     if (existingBusiness || existingEmployee) {
       return NextResponse.json(
-        { error: 'Username already exists' },
+        { error: 'Kullanıcı adı zaten mevcut' },
         { status: 400 }
       );
     }
@@ -84,13 +84,13 @@ export async function PUT(
     
     if (error && typeof error === 'object' && 'code' in error && (error as any).code === 11000) {
       return NextResponse.json(
-        { error: 'Username already exists' },
+        { error: 'Kullanıcı adı zaten mevcut' },
         { status: 400 }
       );
     }
     
     return NextResponse.json(
-      { error: 'Failed to update employee' },
+      { error: 'Çalışan güncellenemedi' },
       { status: 500 }
     );
   }
@@ -115,7 +115,7 @@ export async function DELETE(
     const employee = await Employee.findById(id);
     if (!employee) {
       return NextResponse.json(
-        { error: 'Employee not found' },
+        { error: 'Çalışan bulunamadı' },
         { status: 404 }
       );
     }
@@ -137,10 +137,10 @@ export async function DELETE(
     // Delete the employee
     await Employee.findByIdAndDelete(id);
 
-    return NextResponse.json({ message: 'Employee deleted successfully' });
+    return NextResponse.json({ message: 'Çalışan başarıyla silindi' });
   } catch {
     return NextResponse.json(
-      { error: 'Failed to delete employee' },
+      { error: 'Çalışan silinemedi' },
       { status: 500 }
     );
   }

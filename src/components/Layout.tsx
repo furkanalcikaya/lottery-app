@@ -2,9 +2,6 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import i18n from '@/lib/i18n';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,23 +10,10 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const { t } = useTranslation();
-  const [language, setLanguage] = useState<'TR' | 'EN'>('TR');
-
-  useEffect(() => {
-    // Set initial language from i18n
-    setLanguage(i18n.language as 'TR' | 'EN');
-  }, []);
 
   const handleLogout = async () => {
     await logout();
     router.push('/login');
-  };
-
-  const toggleLanguage = () => {
-    const newLang = language === 'TR' ? 'EN' : 'TR';
-    setLanguage(newLang);
-    i18n.changeLanguage(newLang);
   };
 
   if (!user) {
@@ -46,7 +30,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex justify-between h-16">
             {/* Left side - Company Name */}
             <div className="flex items-center">
-              <h1 className="text-l font-bold text-white">
+              <h1 className="text-l font-bold text-white uppercase">
                 {companyName}
               </h1>
             </div>
@@ -54,23 +38,11 @@ export default function Layout({ children }: LayoutProps) {
             {/* Right side - User info, Language selector, Logout */}
             <div className="flex items-center space-x-4">
               
-              {/* Language Selector */}
-              <div className="flex items-center">
-                <button
-                  onClick={toggleLanguage}
-                  className="text-gray-300 hover:text-white text-sm font-medium transition-colors"
-                >
-                  <span className={language === 'TR' ? 'text-white' : 'text-gray-400'}>TR</span>
-                  <span className="text-gray-500 mx-1">|</span>
-                  <span className={language === 'EN' ? 'text-white' : 'text-gray-400'}>EN</span>
-                </button>
-              </div>
-              
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
-                {t('navbar.logout')}
+                Çıkış Yap
               </button>
             </div>
           </div>

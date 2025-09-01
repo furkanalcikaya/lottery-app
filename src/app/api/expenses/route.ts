@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const storeId = searchParams.get('store');
+    const type = searchParams.get('type');
 
     const query: any = {};
     
@@ -39,8 +41,19 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // Add store filter if provided
+    if (storeId) {
+      query.store = storeId;
+    }
+
+    // Add type filter if provided
+    if (type && (type === 'expense' || type === 'payment')) {
+      query.type = type;
+    }
+
     const expenses = await ExpenseEntry.find(query)
       .populate('user', 'name username')
+      .populate('store', 'name address')
       .sort({ date: -1, createdAt: -1 });
 
     return NextResponse.json({ expenses });
@@ -59,11 +72,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { date, description, amount } = await request.json();
+
+
+    const { date, description, amount, store, type } = await request.json();
 
     // Validate required fields
-    if (!date || !description || amount === undefined || amount < 0) {
-      return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
+    if (!date || !description || amount === undefined || amount < 0 || !store || !type) {
+      return NextResponse.json({ error: 'Date, description, amount, store, and type are required' }, { status: 400 });
+    }
+
+    // Validate type
+    if (type !== 'expense' && type !== 'payment') {
+      return NextResponse.json({ error: 'Type must be either expense or payment' }, { status: 400 });
     }
 
     // Validate date (only allow last month entries)
@@ -83,13 +103,16 @@ export async function POST(request: NextRequest) {
       user: authUser.id,
       userType: authUser.role === 'business' ? 'Business' : 'Employee',
       business: authUser.businessId,
+      store: store,
       date: entryDate,
+      type: type,
       description: description.trim(),
       amount: parseInt(amount)
     });
 
     await expenseEntry.save();
     await expenseEntry.populate('user', 'name username');
+    await expenseEntry.populate('store', 'name address');
 
     return NextResponse.json({ expense: expenseEntry }, { status: 201 });
   } catch (error) {

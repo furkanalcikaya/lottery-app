@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const storeId = searchParams.get('store');
 
     await initMongoose();
 
@@ -44,6 +45,11 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // Add store filter if provided
+    if (storeId) {
+      query.store = storeId;
+    }
+
     let entries;
     if (user.role === 'business') {
       entries = await IncomeEntry.find(query)
@@ -51,9 +57,17 @@ export async function GET(request: NextRequest) {
           path: 'user',
           select: 'name username companyName'
         })
+        .populate({
+          path: 'store',
+          select: 'name address'
+        })
         .sort({ date: -1 });
     } else {
       entries = await IncomeEntry.find(query)
+        .populate({
+          path: 'store',
+          select: 'name address'
+        })
         .sort({ date: -1 });
     }
 
@@ -77,11 +91,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, cashIncome, posIncome } = await request.json();
+    const { 
+      date, 
+      cashIncome, 
+      posIncome, 
+      lotteryTicketIncome, 
+      lotteryScratchIncome, 
+      lotteryNumericalIncome,
+      store 
+    } = await request.json();
 
-    if (!date) {
+    if (!date || !store) {
       return NextResponse.json(
-        { error: 'Date is required' },
+        { error: 'Date and store are required' },
         { status: 400 }
       );
     }
@@ -103,32 +125,36 @@ export async function POST(request: NextRequest) {
 
     await initMongoose();
 
-    // Check if entry already exists for this user and date
-    const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
-    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
+    // Remove the unique constraint check since we now allow multiple entries per day
+    // const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+    // const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
     
-    const existingEntry = await IncomeEntry.findOne({
-      user: user.id,
-      date: {
-        $gte: startOfDay,
-        $lt: endOfDay
-      }
-    });
+    // const existingEntry = await IncomeEntry.findOne({
+    //   user: user.id,
+    //   date: {
+    //     $gte: startOfDay,
+    //     $lt: endOfDay
+    //   }
+    // });
 
-    if (existingEntry) {
-      return NextResponse.json(
-        { error: 'Entry already exists for this date' },
-        { status: 409 }
-      );
-    }
+    // if (existingEntry) {
+    //   return NextResponse.json(
+    //     { error: 'Entry already exists for this date' },
+    //     { status: 409 }
+    //   );
+    // }
 
     const entry = new IncomeEntry({
       user: user.id,
       userType: user.role === 'business' ? 'Business' : 'Employee',
       business: user.businessId,
+      store: store,
       date: entryDate,
       cashIncome: cashIncome || 0,
-      posIncome: posIncome || 0
+      posIncome: posIncome || 0,
+      lotteryTicketIncome: lotteryTicketIncome || 0,
+      lotteryScratchIncome: lotteryScratchIncome || 0,
+      lotteryNumericalIncome: lotteryNumericalIncome || 0
     });
 
     await entry.save();

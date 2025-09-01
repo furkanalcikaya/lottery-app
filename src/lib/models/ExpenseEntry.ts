@@ -16,9 +16,20 @@ const expenseEntrySchema = new mongoose.Schema({
     ref: 'Business',
     required: true
   },
+  store: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Store',
+    required: true
+  },
   date: {
     type: Date,
     required: true
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ['expense', 'payment'], // 'expense' for harcamalar, 'payment' for ödemeler
+    default: 'expense'
   },
   description: {
     type: String,
@@ -37,5 +48,7 @@ const expenseEntrySchema = new mongoose.Schema({
 // Index for efficient querying
 expenseEntrySchema.index({ user: 1, date: 1 });
 expenseEntrySchema.index({ business: 1, date: 1 });
+expenseEntrySchema.index({ store: 1, date: 1 });
+expenseEntrySchema.index({ business: 1, type: 1, date: 1 });
 
 export const ExpenseEntry = mongoose.models.ExpenseEntry || mongoose.model('ExpenseEntry', expenseEntrySchema); 
