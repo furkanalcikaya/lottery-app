@@ -101,16 +101,32 @@ export async function POST(request: NextRequest) {
     fifteenDaysAgoUTC.setUTCHours(0, 0, 0, 0);
 
     // Debug logging to help with timezone issues
-    console.log('=== EXPENSE DATE VALIDATION DEBUG (UTC) ===');
-    console.log('Original date string:', date);
-    console.log('Entry date (UTC):', entryDateUTC.toISOString());
-    console.log('Fifteen days ago (UTC):', fifteenDaysAgoUTC.toISOString());
-    console.log('Today end (UTC):', todayUTC.toISOString());
+    console.log('=== EXPENSE DATE VALIDATION DEBUG ===');
+    console.log('1. Original date string:', date);
+    console.log('2. Parsed components:', { year, month, day });
+    console.log('3. Entry date (UTC):', entryDateUTC.toISOString());
+    console.log('4. Server timezone offset:', new Date().getTimezoneOffset());
+    console.log('5. Current server time:', new Date().toISOString());
     
-    if (entryDateUTC < fifteenDaysAgoUTC || entryDateUTC > todayUTC) {
+    // Use more permissive local date validation
+    const serverNow = new Date();
+    const serverToday = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
+    const fifteenDaysAgoLocal = new Date(serverToday);
+    fifteenDaysAgoLocal.setDate(fifteenDaysAgoLocal.getDate() - 15);
+    
+    const entryDateLocal = new Date(year, month - 1, day);
+    const localValid = entryDateLocal >= fifteenDaysAgoLocal && entryDateLocal <= serverToday;
+    
+    console.log('6. Local validation - Entry date:', entryDateLocal.toISOString());
+    console.log('7. Local validation - Valid range:', fifteenDaysAgoLocal.toISOString(), 'to', serverToday.toISOString());
+    console.log('8. Local validation result:', localValid);
+    
+    if (!localValid) {
       console.log('Expense date validation failed - rejecting entry');
       return NextResponse.json({ error: 'Can only add expenses for the last 15 days' }, { status: 400 });
     }
+    
+    console.log('Expense date validation passed - allowing entry');
 
     // Create expense entry
     const expenseEntry = new ExpenseEntry({
@@ -118,7 +134,7 @@ export async function POST(request: NextRequest) {
       userType: authUser.role === 'business' ? 'Business' : 'Employee',
       business: authUser.businessId,
       store: store,
-      date: entryDateUTC,
+      date: entryDateLocal,
       type: type,
       description: description.trim(),
       amount: parseFloat(amount)

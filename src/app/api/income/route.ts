@@ -123,22 +123,47 @@ export async function POST(request: NextRequest) {
     fifteenDaysAgoUTC.setUTCHours(0, 0, 0, 0);
 
     // Debug logging to help with timezone issues
-    console.log('=== DATE VALIDATION DEBUG (UTC) ===');
-    console.log('Original date string:', date);
-    console.log('Entry date (UTC):', entryDateUTC.toISOString());
-    console.log('Fifteen days ago (UTC):', fifteenDaysAgoUTC.toISOString());
-    console.log('Today end (UTC):', todayUTC.toISOString());
-    console.log('Server timezone offset (minutes):', new Date().getTimezoneOffset());
-    console.log('Current server time:', new Date().toISOString());
-    console.log('Entry date valid?', entryDateUTC >= fifteenDaysAgoUTC && entryDateUTC <= todayUTC);
+    console.log('=== DETAILED DATE VALIDATION DEBUG ===');
+    console.log('1. Original date string:', date);
+    console.log('2. Parsed components:', { year, month, day });
+    console.log('3. Entry date (UTC):', entryDateUTC.toISOString());
+    console.log('4. Entry date (Local):', entryDateUTC.toString());
+    console.log('5. Fifteen days ago (UTC):', fifteenDaysAgoUTC.toISOString());
+    console.log('6. Today end (UTC):', todayUTC.toISOString());
+    console.log('7. Server timezone offset (minutes):', new Date().getTimezoneOffset());
+    console.log('8. Current server time (UTC):', new Date().toISOString());
+    console.log('9. Current server time (Local):', new Date().toString());
+    console.log('10. Entry >= FifteenDaysAgo?', entryDateUTC >= fifteenDaysAgoUTC);
+    console.log('11. Entry <= Today?', entryDateUTC <= todayUTC);
+    console.log('12. Overall valid?', entryDateUTC >= fifteenDaysAgoUTC && entryDateUTC <= todayUTC);
+    
+    // Let's also try a more permissive approach - allow today + last 15 days
+    const serverNow = new Date();
+    const serverToday = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
+    const fifteenDaysAgoLocal = new Date(serverToday);
+    fifteenDaysAgoLocal.setDate(fifteenDaysAgoLocal.getDate() - 15);
+    
+    console.log('=== ALTERNATIVE LOCAL DATE CHECK ===');
+    console.log('Server today (local):', serverToday.toISOString());
+    console.log('Fifteen days ago (local):', fifteenDaysAgoLocal.toISOString());
+    console.log('Entry date for comparison:', new Date(year, month - 1, day).toISOString());
+    
+    const entryDateLocal = new Date(year, month - 1, day);
+    const localValid = entryDateLocal >= fifteenDaysAgoLocal && entryDateLocal <= serverToday;
+    console.log('Local validation result:', localValid);
 
-    if (entryDateUTC < fifteenDaysAgoUTC || entryDateUTC > todayUTC) {
+    // Use the more permissive check for now
+    if (!localValid) {
       console.log('Date validation failed - rejecting entry');
+      console.log('Entry date:', entryDateLocal.toISOString());
+      console.log('Must be between:', fifteenDaysAgoLocal.toISOString(), 'and', serverToday.toISOString());
       return NextResponse.json(
         { error: 'Sadece son 15 gün için gelir-gider ekleyebilirsiniz' },
         { status: 400 }
       );
     }
+    
+    console.log('Date validation passed - allowing entry');
 
     await initMongoose();
 
@@ -166,7 +191,7 @@ export async function POST(request: NextRequest) {
       userType: user.role === 'business' ? 'Business' : 'Employee',
       business: user.businessId,
       store: store,
-      date: entryDateUTC,
+      date: entryDateLocal,
       cashIncome: cashIncome || 0,
       posIncome: posIncome || 0,
       lotteryTicketIncome: lotteryTicketIncome || 0,
