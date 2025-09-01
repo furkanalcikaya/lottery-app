@@ -15,10 +15,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Restrict expense editing to business users only
-    if (authUser.role === 'employee') {
-      return NextResponse.json({ error: 'Employees cannot edit expenses' }, { status: 403 });
-    }
+
 
     const { id } = await params;
     const { date, description, amount, store, type } = await request.json();
@@ -91,10 +88,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Restrict expense deletion to business users only
-    if (authUser.role === 'employee') {
-      return NextResponse.json({ error: 'Employees cannot delete expenses' }, { status: 403 });
-    }
+
 
     const { id } = await params;
 
@@ -108,13 +102,22 @@ export async function DELETE(
       return NextResponse.json({ error: 'Cannot delete other users expenses' }, { status: 403 });
     }
 
-    // Check date restriction (only allow editing last month)
-    const today = new Date();
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    // Check date restriction (only allow deleting last 15 days entries)
+    const expenseDate = new Date(expense.date);
+    expenseDate.setHours(0, 0, 0, 0);
     
-    if (expense.date < lastMonth || expense.date > currentMonthEnd) {
-      return NextResponse.json({ error: 'Can only delete expenses for the last month and current month' }, { status: 400 });
+    const serverNow = new Date();
+    const serverToday = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
+    
+    // Allow entries for tomorrow too (to handle timezone differences)
+    const allowedEndDate = new Date(serverToday);
+    allowedEndDate.setDate(allowedEndDate.getDate() + 1);
+    
+    const fifteenDaysAgoLocal = new Date(serverToday);
+    fifteenDaysAgoLocal.setDate(fifteenDaysAgoLocal.getDate() - 15);
+    
+    if (expenseDate < fifteenDaysAgoLocal || expenseDate > allowedEndDate) {
+      return NextResponse.json({ error: 'Can only delete expenses for the last 15 days' }, { status: 400 });
     }
 
     await ExpenseEntry.findByIdAndDelete(id);

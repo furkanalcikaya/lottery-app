@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initMongoose } from '@/lib/mongoose';
 import IncomeEntry from '@/lib/models/IncomeEntry';
-import Store from '@/lib/models/Store';
 import { getAuthUser } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
