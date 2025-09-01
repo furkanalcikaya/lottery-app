@@ -108,22 +108,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate that the date is within the last month
+    // Validate that the date is within the last 15 days
     // Parse date in local timezone to avoid timezone shift
     const [year, month, day] = date.split('-').map(Number);
     const entryDate = new Date(year, month - 1, day); // month is 0-based
     entryDate.setHours(0, 0, 0, 0); // Set to start of day
     
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    oneMonthAgo.setHours(0, 0, 0, 0); // Set to start of day
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+    fifteenDaysAgo.setHours(0, 0, 0, 0); // Set to start of day
     
     const today = new Date();
     today.setHours(23, 59, 59, 999); // Set to end of today
 
-    if (entryDate < oneMonthAgo || entryDate > today) {
+    if (entryDate < fifteenDaysAgo || entryDate > today) {
       return NextResponse.json(
-        { error: 'You can only add entries for the last month' },
+        { error: 'Sadece son 15 gün için gelir-gider ekleyebilirsiniz' },
         { status: 400 }
       );
     }

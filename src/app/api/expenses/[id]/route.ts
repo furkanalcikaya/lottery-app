@@ -33,20 +33,20 @@ export async function PUT(
       return NextResponse.json({ error: 'Cannot edit other users expenses' }, { status: 403 });
     }
 
-    // Validate date (only allow last month entries)
+    // Validate date (only allow last 15 days entries)
     const [year, month, day] = date.split('-').map(Number);
     const entryDate = new Date(year, month - 1, day); // month is 0-based
     entryDate.setHours(0, 0, 0, 0);
     
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    oneMonthAgo.setHours(0, 0, 0, 0);
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+    fifteenDaysAgo.setHours(0, 0, 0, 0);
     
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     
-    if (entryDate < oneMonthAgo || entryDate > today) {
-      return NextResponse.json({ error: 'Can only edit expenses for the last month and current month' }, { status: 400 });
+    if (entryDate < fifteenDaysAgo || entryDate > today) {
+      return NextResponse.json({ error: 'Can only edit expenses for the last 15 days' }, { status: 400 });
     }
 
     // Validate required fields

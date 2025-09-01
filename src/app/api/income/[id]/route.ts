@@ -45,14 +45,20 @@ export async function PUT(
       );
     }
 
-    // Validate date (only allow editing last month's data)
+    // Validate date (only allow editing last 15 days data)
     const entryDate = new Date(entry.date);
-    const now = new Date();
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    entryDate.setHours(0, 0, 0, 0);
     
-    if (entryDate < lastMonth) {
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+    fifteenDaysAgo.setHours(0, 0, 0, 0);
+    
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
+    if (entryDate < fifteenDaysAgo || entryDate > today) {
       return NextResponse.json(
-        { error: 'Cannot edit entries older than last month' },
+        { error: 'Cannot edit entries older than 15 days' },
         { status: 400 }
       );
     }

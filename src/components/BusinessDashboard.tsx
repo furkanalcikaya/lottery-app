@@ -688,21 +688,29 @@ export default function BusinessDashboard() {
       { cash: 0, pos: 0, lotteryTicket: 0, lotteryScratch: 0, lotteryNumerical: 0 }
     );
     
-    const expenseTotal = selectedRangeExpenses.reduce(
-      (acc, expense) => acc + expense.amount,
-      0
+    const expenseTotals = selectedRangeExpenses.reduce(
+      (acc, expense) => {
+        if (expense.type === 'expense') {
+          acc.expenses += expense.amount;
+        } else {
+          acc.payments += expense.amount;
+        }
+        return acc;
+      },
+      { expenses: 0, payments: 0 }
     );
     
     const totals = {
       ...incomeTotals,
-      expenses: expenseTotal
+      expenses: expenseTotals.expenses,
+      payments: expenseTotals.payments
     };
     
     console.log('Selected range calculated totals:', totals);
     
     return {
       ...totals,
-      net: totals.cash + totals.pos + totals.lotteryTicket + totals.lotteryScratch + totals.lotteryNumerical - totals.expenses
+      net: totals.cash + totals.pos + totals.lotteryTicket + totals.lotteryScratch + totals.lotteryNumerical - totals.expenses - totals.payments
     };
   };
 
@@ -775,7 +783,7 @@ export default function BusinessDashboard() {
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-sm font-medium text-gray-400">Giderler</h3>
-              <p className="text-3xl font-bold text-red-400 mt-2">{formatCurrency(selectedRangeStats.expenses)}</p>
+              <p className="text-3xl font-bold text-red-400 mt-2">{formatCurrency(selectedRangeStats.expenses + selectedRangeStats.payments)}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-sm font-medium text-gray-400">Net Kar</h3>
@@ -1405,7 +1413,7 @@ export default function BusinessDashboard() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-400">{'Giderler'}</p>
-                        <p className="text-xl font-bold text-red-400">{formatCurrency(monthStat.totalExpenses)}</p>
+                        <p className="text-xl font-bold text-red-400">{formatCurrency(monthStat.totalExpenses + monthStat.totalPayments)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-400">{'Net Kar'}</p>
