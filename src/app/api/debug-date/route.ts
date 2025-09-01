@@ -14,10 +14,12 @@ export async function GET(request: NextRequest) {
     parsedDate = new Date(year, month - 1, day);
     
     const serverToday = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
+    const allowedEndDate = new Date(serverToday);
+    allowedEndDate.setDate(allowedEndDate.getDate() + 1); // Allow tomorrow too
     const fifteenDaysAgo = new Date(serverToday);
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
     
-    isValid = parsedDate >= fifteenDaysAgo && parsedDate <= serverToday;
+    isValid = parsedDate >= fifteenDaysAgo && parsedDate <= allowedEndDate;
   }
   
   return NextResponse.json({
@@ -35,6 +37,11 @@ export async function GET(request: NextRequest) {
     } : null,
     validation: dateParam ? {
       serverToday: new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate()).toISOString(),
+      allowedEndDate: (() => {
+        const d = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
+        d.setDate(d.getDate() + 1);
+        return d.toISOString();
+      })(),
       fifteenDaysAgo: (() => {
         const d = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
         d.setDate(d.getDate() - 15);

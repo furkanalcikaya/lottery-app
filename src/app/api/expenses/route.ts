@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { initMongoose } from '@/lib/mongoose';
 import { ExpenseEntry } from '@/lib/models/ExpenseEntry';
+import Store from '@/lib/models/Store';
 
 export async function GET(request: NextRequest) {
   try {
@@ -108,17 +109,22 @@ export async function POST(request: NextRequest) {
     console.log('4. Server timezone offset:', new Date().getTimezoneOffset());
     console.log('5. Current server time:', new Date().toISOString());
     
-    // Use more permissive local date validation
+    // Use more permissive local date validation - allow tomorrow too
     const serverNow = new Date();
     const serverToday = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
+    
+    // Allow entries for tomorrow too (to handle timezone differences)
+    const allowedEndDate = new Date(serverToday);
+    allowedEndDate.setDate(allowedEndDate.getDate() + 1);
+    
     const fifteenDaysAgoLocal = new Date(serverToday);
     fifteenDaysAgoLocal.setDate(fifteenDaysAgoLocal.getDate() - 15);
     
     const entryDateLocal = new Date(year, month - 1, day);
-    const localValid = entryDateLocal >= fifteenDaysAgoLocal && entryDateLocal <= serverToday;
+    const localValid = entryDateLocal >= fifteenDaysAgoLocal && entryDateLocal <= allowedEndDate;
     
     console.log('6. Local validation - Entry date:', entryDateLocal.toISOString());
-    console.log('7. Local validation - Valid range:', fifteenDaysAgoLocal.toISOString(), 'to', serverToday.toISOString());
+    console.log('7. Local validation - Valid range:', fifteenDaysAgoLocal.toISOString(), 'to', allowedEndDate.toISOString());
     console.log('8. Local validation result:', localValid);
     
     if (!localValid) {

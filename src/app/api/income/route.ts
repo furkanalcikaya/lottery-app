@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initMongoose } from '@/lib/mongoose';
 import IncomeEntry from '@/lib/models/IncomeEntry';
+import Store from '@/lib/models/Store';
 import { getAuthUser } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -137,26 +138,32 @@ export async function POST(request: NextRequest) {
     console.log('11. Entry <= Today?', entryDateUTC <= todayUTC);
     console.log('12. Overall valid?', entryDateUTC >= fifteenDaysAgoUTC && entryDateUTC <= todayUTC);
     
-    // Let's also try a more permissive approach - allow today + last 15 days
+    // More permissive approach - allow today + tomorrow + last 15 days
     const serverNow = new Date();
     const serverToday = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
+    
+    // Allow entries for tomorrow too (to handle timezone differences)
+    const allowedEndDate = new Date(serverToday);
+    allowedEndDate.setDate(allowedEndDate.getDate() + 1);
+    
     const fifteenDaysAgoLocal = new Date(serverToday);
     fifteenDaysAgoLocal.setDate(fifteenDaysAgoLocal.getDate() - 15);
     
-    console.log('=== ALTERNATIVE LOCAL DATE CHECK ===');
-    console.log('Server today (local):', serverToday.toISOString());
-    console.log('Fifteen days ago (local):', fifteenDaysAgoLocal.toISOString());
+    console.log('=== PERMISSIVE DATE VALIDATION ===');
+    console.log('Server today:', serverToday.toISOString());
+    console.log('Allowed end date (tomorrow):', allowedEndDate.toISOString());
+    console.log('Fifteen days ago:', fifteenDaysAgoLocal.toISOString());
     console.log('Entry date for comparison:', new Date(year, month - 1, day).toISOString());
     
     const entryDateLocal = new Date(year, month - 1, day);
-    const localValid = entryDateLocal >= fifteenDaysAgoLocal && entryDateLocal <= serverToday;
-    console.log('Local validation result:', localValid);
+    const localValid = entryDateLocal >= fifteenDaysAgoLocal && entryDateLocal <= allowedEndDate;
+    console.log('PERMISSIVE validation result:', localValid);
 
     // Use the more permissive check for now
     if (!localValid) {
       console.log('Date validation failed - rejecting entry');
       console.log('Entry date:', entryDateLocal.toISOString());
-      console.log('Must be between:', fifteenDaysAgoLocal.toISOString(), 'and', serverToday.toISOString());
+      console.log('Must be between:', fifteenDaysAgoLocal.toISOString(), 'and', allowedEndDate.toISOString());
       return NextResponse.json(
         { error: 'Sadece son 15 gün için gelir-gider ekleyebilirsiniz' },
         { status: 400 }
