@@ -586,8 +586,7 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
-        {/* Expense Management Section - Only visible for business users */}
-        {user?.role === 'business' && (
+        {/* Expense Management Section */}
         <div className="bg-gray-800 rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">{'Gider Yönetimi'}</h2>
@@ -766,7 +765,6 @@ export default function EmployeeDashboard() {
             </div>
           </div>
         </div>
-        )}
       </div>
     </div>
   );

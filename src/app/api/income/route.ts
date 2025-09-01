@@ -112,11 +112,16 @@ export async function POST(request: NextRequest) {
     // Parse date in local timezone to avoid timezone shift
     const [year, month, day] = date.split('-').map(Number);
     const entryDate = new Date(year, month - 1, day); // month is 0-based
+    entryDate.setHours(0, 0, 0, 0); // Set to start of day
     
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0); // Set to start of day
+    
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Set to end of today
 
-    if (entryDate < oneMonthAgo || entryDate > new Date()) {
+    if (entryDate < oneMonthAgo || entryDate > today) {
       return NextResponse.json(
         { error: 'You can only add entries for the last month' },
         { status: 400 }

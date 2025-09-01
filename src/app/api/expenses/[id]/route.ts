@@ -34,14 +34,18 @@ export async function PUT(
     }
 
     // Validate date (only allow last month entries)
-    const entryDate = new Date(date);
+    const [year, month, day] = date.split('-').map(Number);
+    const entryDate = new Date(year, month - 1, day); // month is 0-based
     entryDate.setHours(0, 0, 0, 0);
     
-    const today = new Date();
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0);
     
-    if (entryDate < lastMonth || entryDate > currentMonthEnd) {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
+    if (entryDate < oneMonthAgo || entryDate > today) {
       return NextResponse.json({ error: 'Can only edit expenses for the last month and current month' }, { status: 400 });
     }
 
@@ -58,7 +62,7 @@ export async function PUT(
     // Update expense
     expense.date = entryDate;
     expense.description = description.trim();
-    expense.amount = parseInt(amount);
+    expense.amount = parseFloat(amount);
     expense.store = store;
     expense.type = type;
 
