@@ -46,17 +46,18 @@ export async function PUT(
     }
 
     // Validate date (only allow editing last 15 days data)
+    // Use UTC dates to avoid timezone issues between client and server
     const entryDate = new Date(entry.date);
-    entryDate.setHours(0, 0, 0, 0);
+    const entryDateUTC = new Date(Date.UTC(entryDate.getUTCFullYear(), entryDate.getUTCMonth(), entryDate.getUTCDate(), 0, 0, 0, 0));
     
-    const fifteenDaysAgo = new Date();
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-    fifteenDaysAgo.setHours(0, 0, 0, 0);
+    const nowUTC = new Date();
+    const todayUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), nowUTC.getUTCDate(), 23, 59, 59, 999));
     
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    const fifteenDaysAgoUTC = new Date(todayUTC);
+    fifteenDaysAgoUTC.setUTCDate(fifteenDaysAgoUTC.getUTCDate() - 15);
+    fifteenDaysAgoUTC.setUTCHours(0, 0, 0, 0);
     
-    if (entryDate < fifteenDaysAgo || entryDate > today) {
+    if (entryDateUTC < fifteenDaysAgoUTC || entryDateUTC > todayUTC) {
       return NextResponse.json(
         { error: 'Cannot edit entries older than 15 days' },
         { status: 400 }

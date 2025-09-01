@@ -87,18 +87,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate date (only allow last 15 days entries)
+    // Use UTC dates to avoid timezone issues between client and server
     const [year, month, day] = date.split('-').map(Number);
-    const entryDate = new Date(year, month - 1, day); // month is 0-based
-    entryDate.setHours(0, 0, 0, 0);
     
-    const fifteenDaysAgo = new Date();
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-    fifteenDaysAgo.setHours(0, 0, 0, 0);
+    // Create dates in UTC to ensure consistency across timezones
+    const entryDateUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    const nowUTC = new Date();
+    const todayUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), nowUTC.getUTCDate(), 23, 59, 59, 999));
     
-    if (entryDate < fifteenDaysAgo || entryDate > today) {
+    const fifteenDaysAgoUTC = new Date(todayUTC);
+    fifteenDaysAgoUTC.setUTCDate(fifteenDaysAgoUTC.getUTCDate() - 15);
+    fifteenDaysAgoUTC.setUTCHours(0, 0, 0, 0);
+
+    // Debug logging to help with timezone issues
+    console.log('=== EXPENSE DATE VALIDATION DEBUG (UTC) ===');
+    console.log('Original date string:', date);
+    console.log('Entry date (UTC):', entryDateUTC.toISOString());
+    console.log('Fifteen days ago (UTC):', fifteenDaysAgoUTC.toISOString());
+    console.log('Today end (UTC):', todayUTC.toISOString());
+    
+    if (entryDateUTC < fifteenDaysAgoUTC || entryDateUTC > todayUTC) {
+      console.log('Expense date validation failed - rejecting entry');
       return NextResponse.json({ error: 'Can only add expenses for the last 15 days' }, { status: 400 });
     }
 
@@ -108,7 +118,7 @@ export async function POST(request: NextRequest) {
       userType: authUser.role === 'business' ? 'Business' : 'Employee',
       business: authUser.businessId,
       store: store,
-      date: entryDate,
+      date: entryDateUTC,
       type: type,
       description: description.trim(),
       amount: parseFloat(amount)

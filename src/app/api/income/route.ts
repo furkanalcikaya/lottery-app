@@ -109,19 +109,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate that the date is within the last 15 days
-    // Parse date in local timezone to avoid timezone shift
+    // Use UTC dates to avoid timezone issues between client and server
     const [year, month, day] = date.split('-').map(Number);
-    const entryDate = new Date(year, month - 1, day); // month is 0-based
-    entryDate.setHours(0, 0, 0, 0); // Set to start of day
     
-    const fifteenDaysAgo = new Date();
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-    fifteenDaysAgo.setHours(0, 0, 0, 0); // Set to start of day
+    // Create dates in UTC to ensure consistency across timezones
+    const entryDateUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     
-    const today = new Date();
-    today.setHours(23, 59, 59, 999); // Set to end of today
+    const nowUTC = new Date();
+    const todayUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), nowUTC.getUTCDate(), 23, 59, 59, 999));
+    
+    const fifteenDaysAgoUTC = new Date(todayUTC);
+    fifteenDaysAgoUTC.setUTCDate(fifteenDaysAgoUTC.getUTCDate() - 15);
+    fifteenDaysAgoUTC.setUTCHours(0, 0, 0, 0);
 
-    if (entryDate < fifteenDaysAgo || entryDate > today) {
+    // Debug logging to help with timezone issues
+    console.log('=== DATE VALIDATION DEBUG (UTC) ===');
+    console.log('Original date string:', date);
+    console.log('Entry date (UTC):', entryDateUTC.toISOString());
+    console.log('Fifteen days ago (UTC):', fifteenDaysAgoUTC.toISOString());
+    console.log('Today end (UTC):', todayUTC.toISOString());
+    console.log('Server timezone offset (minutes):', new Date().getTimezoneOffset());
+    console.log('Current server time:', new Date().toISOString());
+    console.log('Entry date valid?', entryDateUTC >= fifteenDaysAgoUTC && entryDateUTC <= todayUTC);
+
+    if (entryDateUTC < fifteenDaysAgoUTC || entryDateUTC > todayUTC) {
+      console.log('Date validation failed - rejecting entry');
       return NextResponse.json(
         { error: 'Sadece son 15 gün için gelir-gider ekleyebilirsiniz' },
         { status: 400 }
@@ -154,7 +166,7 @@ export async function POST(request: NextRequest) {
       userType: user.role === 'business' ? 'Business' : 'Employee',
       business: user.businessId,
       store: store,
-      date: entryDate,
+      date: entryDateUTC,
       cashIncome: cashIncome || 0,
       posIncome: posIncome || 0,
       lotteryTicketIncome: lotteryTicketIncome || 0,
