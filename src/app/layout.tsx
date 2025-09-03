@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Loto Bayi Yönetim Sistemi",
+  title: "Şükrü Demirbaş Yönetim Sistemi",
   description: "Loto bayi gelir ve gider takip sistemi",
 };
 
